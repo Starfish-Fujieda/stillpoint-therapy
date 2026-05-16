@@ -1,0 +1,384 @@
+topics:
+  core_therapy_techniques:
+    display_name: "Core Therapy Techniques"
+    description: "Foundational therapeutic frameworks — ACT, IFS, CBT, mindfulness"
+    required: true
+    core_sources:
+      - title: "The Happiness Trap"
+        author: "Russ Harris"
+        type: book
+        why: "Accessible ACT introduction for clients and practitioners"
+      - title: "No Bad Parts"
+        author: "Richard Schwartz"
+        type: book
+        why: "IFS fundamentals written for a general audience"
+      - title: "Get Out of Your Mind and Into Your Life"
+        author: "Steven Hayes"
+        type: book
+        why: "ACT workbook with practical exercises for psychological flexibility"
+      - title: "Cognitive Behavior Therapy: Basics and Beyond"
+        author: "Judith Beck"
+        type: book
+        why: "Foundational CBT techniques and case conceptualization"
+    supplemental_sources:
+      - title: "The Body Keeps the Score"
+        author: "Bessel van der Kolk"
+        type: book
+        why: "Understanding how trauma affects the body and mind"
+      - title: "Radical Acceptance"
+        author: "Tara Brach"
+        type: book
+        why: "Mindfulness-based emotional acceptance practices"
+
+  self_compassion_shame:
+    display_name: "Self-Compassion & Shame Resilience"
+    description: "Shame resilience, self-compassion, emotional regulation"
+    required: true
+    core_sources:
+      - title: "Self-Compassion: The Proven Power of Being Kind to Yourself"
+        author: "Kristin Neff"
+        type: book
+        why: "Foundational self-compassion research and practice"
+      - title: "I Thought It Was Just Me (But It Isn't)"
+        author: "Brené Brown"
+        type: book
+        why: "Shame resilience framework — accessible, research-grounded"
+      - title: "The Mindful Path to Self-Compassion"
+        author: "Christopher Germer"
+        type: book
+        why: "Practical guide to self-compassion through mindfulness"
+    supplemental_sources:
+      - title: "Daring Greatly"
+        author: "Brené Brown"
+        type: book
+        why: "Vulnerability and shame resilience in everyday life"
+
+  cptsd_trauma:
+    display_name: "CPTSD & Trauma"
+    description: "Complex trauma recovery, emotional flashbacks, nervous system regulation"
+    required: false
+    core_sources:
+      - title: "Complex PTSD: From Surviving to Thriving"
+        author: "Pete Walker"
+        type: book
+        why: "The definitive guide to understanding and recovering from CPTSD"
+      - title: "The Body Keeps the Score"
+        author: "Bessel van der Kolk"
+        type: book
+        why: "How trauma reshapes the body and brain, and innovative treatments"
+      - title: "Waking the Tiger"
+        author: "Peter Levine"
+        type: book
+        why: "Somatic Experiencing approach to healing trauma"
+      - title: "Trauma and Recovery"
+        author: "Judith Herman"
+        type: book
+        why: "Foundational framework for understanding trauma recovery stages"
+    supplemental_sources:
+      - title: "What My Bones Know"
+        author: "Stephanie Foo"
+        type: book
+        why: "Personal CPTSD recovery narrative with clinical context"
+
+  adhd_executive_function:
+    display_name: "ADHD & Executive Function"
+    description: "Attention differences, executive function strategies, dopamine-aware approaches"
+    required: false
+    core_sources:
+      - title: "Driven to Distraction"
+        author: "Edward Hallowell & John Ratey"
+        type: book
+        why: "Comprehensive guide to recognizing and understanding ADHD"
+      - title: "ADHD 2.0"
+        author: "Edward Hallowell & John Ratey"
+        type: book
+        why: "Updated science and practical strategies for ADHD brains"
+      - title: "Taking Charge of Adult ADHD"
+        author: "Russell Barkley"
+        type: book
+        why: "Evidence-based strategies grounded in executive function research"
+    supplemental_sources:
+      - title: "How to Keep House While Drowning"
+        author: "KC Davis"
+        type: book
+        why: "Shame-free practical strategies for when executive function fails"
+      - title: "Your Brain's Not Broken"
+        author: "Tamara Rosier"
+        type: book
+        why: "Understanding emotional regulation with ADHD"
+
+  asd_neurodivergence:
+    display_name: "ASD & Neurodivergence"
+    description: "Autism spectrum, neurodivergent identity, sensory processing, masking"
+    required: false
+    core_sources:
+      - title: "Unmasking Autism"
+        author: "Devon Price"
+        type: book
+        why: "Understanding autistic identity, masking, and authentic living"
+      - title: "NeuroTribes"
+        author: "Steve Silberman"
+        type: book
+        why: "History and context of neurodiversity as a concept"
+      - title: "Divergent Mind"
+        author: "Jenara Nerenberg"
+        type: book
+        why: "Neurodivergence through a gender-inclusive lens"
+    supplemental_sources:
+      - title: "The Reason I Jump"
+        author: "Naoki Higashida"
+        type: book
+        why: "First-person perspective on autistic experience"
+
+  anxiety_ocd:
+    display_name: "Anxiety & OCD"
+    description: "Anxiety management, OCD treatment, exposure techniques, worry patterns"
+    required: false
+    core_sources:
+      - title: "The Anxiety & Phobia Workbook"
+        author: "Edmund Bourne"
+        type: book
+        why: "Comprehensive toolkit for understanding and managing anxiety"
+      - title: "Freedom from Obsessive-Compulsive Disorder"
+        author: "Jonathan Grayson"
+        type: book
+        why: "Evidence-based ERP approach to OCD recovery"
+      - title: "Dare"
+        author: "Barry McDonagh"
+        type: book
+        why: "Practical approach to facing anxiety rather than fighting it"
+    supplemental_sources:
+      - title: "The Mindfulness and Acceptance Workbook for Anxiety"
+        author: "John Forsyth & Georg Eifert"
+        type: book
+        why: "ACT-based approach to working with anxiety"
+
+  depression_mood:
+    display_name: "Depression & Mood"
+    description: "Depression recovery, mood regulation, behavioral activation, meaning-making"
+    required: false
+    core_sources:
+      - title: "The Noonday Demon"
+        author: "Andrew Solomon"
+        type: book
+        why: "Comprehensive, compassionate exploration of depression"
+      - title: "Feeling Good"
+        author: "David Burns"
+        type: book
+        why: "Cognitive therapy techniques for depression — practical and proven"
+      - title: "The Upward Spiral"
+        author: "Alex Korb"
+        type: book
+        why: "Neuroscience-informed small steps to improve mood"
+    supplemental_sources:
+      - title: "Lost Connections"
+        author: "Johann Hari"
+        type: book
+        why: "Social and environmental causes of depression beyond brain chemistry"
+
+  substance_use_recovery:
+    display_name: "Substance Use & Recovery"
+    description: "Addiction recovery, harm reduction, relapse prevention, motivational approaches"
+    required: false
+    core_sources:
+      - title: "In the Realm of Hungry Ghosts"
+        author: "Gabor Maté"
+        type: book
+        why: "Compassionate, trauma-informed understanding of addiction"
+      - title: "Recovery: Freedom from Our Addictions"
+        author: "Russell Brand"
+        type: book
+        why: "Accessible recovery framework based on 12-step principles"
+      - title: "Unbroken Brain"
+        author: "Maia Szalavitz"
+        type: book
+        why: "Science-based reframing of addiction as a learning disorder"
+    supplemental_sources:
+      - title: "The Unexpected Joy of Being Sober"
+        author: "Catherine Gray"
+        type: book
+        why: "Positive framing of sobriety rather than loss-focused"
+
+  compulsive_sexual_behavior:
+    display_name: "Compulsive Sexual Behavior"
+    description: "Sexual compulsivity, shame cycles, healthy sexuality, relationship repair"
+    required: false
+    core_sources:
+      - title: "Out of the Shadows"
+        author: "Patrick Carnes"
+        type: book
+        why: "Foundational work on understanding sexual addiction and compulsivity"
+      - title: "Treating Out of Control Sexual Behavior"
+        author: "Douglas Braun-Harvey & Michael Vigorito"
+        type: book
+        why: "Evidence-based clinical approach beyond the addiction model"
+      - title: "Your Brain on Porn"
+        author: "Gary Wilson"
+        type: book
+        why: "Understanding the neuroscience of internet pornography compulsivity"
+    supplemental_sources:
+      - title: "Sexual Intelligence"
+        author: "Marty Klein"
+        type: book
+        why: "Healthy sexuality framework beyond fear-based approaches"
+
+  grief_loss:
+    display_name: "Grief & Loss"
+    description: "Bereavement, ambiguous loss, disenfranchised grief, continuing bonds"
+    required: false
+    core_sources:
+      - title: "On Grief and Grieving"
+        author: "Elisabeth Kübler-Ross & David Kessler"
+        type: book
+        why: "Foundational stages of grief framework with practical guidance"
+      - title: "It's OK That You're Not OK"
+        author: "Megan Devine"
+        type: book
+        why: "Modern, compassionate reframing of grief beyond stages"
+      - title: "The Year of Magical Thinking"
+        author: "Joan Didion"
+        type: book
+        why: "Honest, literary account of acute grief and survival"
+    supplemental_sources:
+      - title: "Option B"
+        author: "Sheryl Sandberg & Adam Grant"
+        type: book
+        why: "Building resilience after loss — practical and personal"
+
+  relationship_attachment:
+    display_name: "Relationship & Attachment"
+    description: "Attachment styles, relationship patterns, communication, boundaries"
+    required: false
+    core_sources:
+      - title: "Attached"
+        author: "Amir Levine & Rachel Heller"
+        type: book
+        why: "Accessible guide to adult attachment theory and its impact on relationships"
+      - title: "Hold Me Tight"
+        author: "Sue Johnson"
+        type: book
+        why: "Emotionally Focused Therapy — understanding relationship patterns"
+      - title: "Mating in Captivity"
+        author: "Esther Perel"
+        type: book
+        why: "Navigating desire and intimacy in long-term relationships"
+    supplemental_sources:
+      - title: "Set Boundaries, Find Peace"
+        author: "Nedra Glennon Tawwab"
+        type: book
+        why: "Practical boundary-setting skills for healthier relationships"
+
+  anger_emotional_regulation:
+    display_name: "Anger & Emotional Regulation"
+    description: "Anger management, emotional dysregulation, distress tolerance, DBT skills"
+    required: false
+    core_sources:
+      - title: "The Dialectical Behavior Therapy Skills Workbook"
+        author: "Matthew McKay, Jeffrey Wood & Jeffrey Brantley"
+        type: book
+        why: "Practical DBT skills for emotional regulation and distress tolerance"
+      - title: "Anger: Wisdom for Cooling the Flames"
+        author: "Thich Nhat Hanh"
+        type: book
+        why: "Mindful approach to understanding and transforming anger"
+      - title: "Rage Becomes Her"
+        author: "Soraya Chemaly"
+        type: book
+        why: "Understanding anger as a legitimate and informative emotion"
+    supplemental_sources:
+      - title: "DBT Made Simple"
+        author: "Sheri Van Dijk"
+        type: book
+        why: "Accessible introduction to DBT concepts and techniques"
+
+  body_image_eating:
+    display_name: "Body Image & Eating Concerns"
+    description: "Body image, disordered eating, intuitive eating, body neutrality"
+    required: false
+    core_sources:
+      - title: "Intuitive Eating"
+        author: "Evelyn Tribole & Elyse Resch"
+        type: book
+        why: "Evidence-based framework for rebuilding a healthy relationship with food and body"
+      - title: "The Body Is Not an Apology"
+        author: "Sonya Renee Taylor"
+        type: book
+        why: "Radical self-love framework for body acceptance"
+      - title: "Body Respect"
+        author: "Linda Bacon & Lucy Aphramor"
+        type: book
+        why: "Science-based alternative to diet culture and weight stigma"
+    supplemental_sources:
+      - title: "Health at Every Size"
+        author: "Linda Bacon"
+        type: book
+        why: "Research-based approach to health independent of weight"
+
+  digital_addiction:
+    display_name: "Digital Addiction"
+    description: "Screen time, social media, gaming, attention economy, digital wellness"
+    required: false
+    core_sources:
+      - title: "Digital Minimalism"
+        author: "Cal Newport"
+        type: book
+        why: "Intentional technology use framework with practical strategies"
+      - title: "The Shallows"
+        author: "Nicholas Carr"
+        type: book
+        why: "How the internet is reshaping our brains and attention"
+      - title: "Irresistible"
+        author: "Adam Alter"
+        type: book
+        why: "Understanding the psychology of addictive technology"
+    supplemental_sources:
+      - title: "Stolen Focus"
+        author: "Johann Hari"
+        type: book
+        why: "Systemic causes of attention crisis beyond individual willpower"
+
+  sleep_chronic_health:
+    display_name: "Sleep & Chronic Health"
+    description: "Sleep hygiene, chronic illness, psychoneuroimmunology, health anxiety"
+    required: false
+    core_sources:
+      - title: "Why We Sleep"
+        author: "Matthew Walker"
+        type: book
+        why: "Comprehensive science of sleep and its impact on mental health"
+      - title: "The Deepest Well"
+        author: "Nadine Burke Harris"
+        type: book
+        why: "Understanding how adverse experiences affect long-term health"
+      - title: "How to Be Sick"
+        author: "Toni Bernhard"
+        type: book
+        why: "Buddhist-inspired approach to living with chronic illness"
+    supplemental_sources:
+      - title: "The Sleep Solution"
+        author: "W. Chris Winter"
+        type: book
+        why: "Practical, science-based approach to improving sleep"
+
+  identity_life_transitions:
+    display_name: "Identity & Life Transitions"
+    description: "Life transitions, identity exploration, existential questions, meaning-making"
+    required: false
+    core_sources:
+      - title: "Transitions"
+        author: "William Bridges"
+        type: book
+        why: "Classic framework for understanding and navigating life transitions"
+      - title: "Man's Search for Meaning"
+        author: "Viktor Frankl"
+        type: book
+        why: "Foundational work on finding meaning through suffering and choice"
+      - title: "Falling Upward"
+        author: "Richard Rohr"
+        type: book
+        why: "Understanding the second half of life as a spiritual and psychological journey"
+    supplemental_sources:
+      - title: "Life Is in the Transitions"
+        author: "Bruce Feiler"
+        type: book
+        why: "Modern research on non-linear life transitions"
