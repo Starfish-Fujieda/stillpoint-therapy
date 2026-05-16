@@ -10,8 +10,9 @@ jinja2>=3.1
 # Memory (MemPalace)
 mempalace>=3.0
 
-# NotebookLM CLI
-notebooklm
+# NotebookLM CLI — NOT a pip dependency. It is an external CLI installed via
+# pipx (it would otherwise pull Playwright into this venv). scripts/setup.sh
+# installs it automatically:  pipx install "notebooklm-py[browser]"
 
 # LLM Providers (install the ones you need)
 anthropic>=0.18

@@ -187,10 +187,13 @@ Tasks 3-5 (foundation) → Tasks 6-8 (templates) → Tasks 9-13 (core library) �
 - [ ] Create config management interface
 - **Files**: `app/settings.py`
 
-### Task 22 — `scripts/setup.sh`
+### Task 22 — `scripts/setup.sh` ✅
 
-- [ ] Create automated setup script
+- [x] Create automated setup script
 - **Files**: `scripts/setup.sh`
+- **Note**: Installs the venv + deps, bootstraps pipx, installs `notebooklm-py[browser]`
+  and Chromium, then prompts for the one-time `notebooklm login`. `notebooklm` is an
+  external pipx CLI, not a pip dependency — it is not in `requirements.txt`.
 
 ### Task 23 — `scripts/save_session.py`
 
