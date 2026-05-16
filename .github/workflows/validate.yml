@@ -31,10 +31,10 @@ jobs:
       - name: Install stillpoint package
         run: pip install -e . --no-deps
 
-      - name: Check: import stillpoint
+      - name: "Check: import stillpoint"
         run: python -c "import stillpoint; print(f'stillpoint {stillpoint.__version__} imported OK')"
 
-      - name: Check: syntax (py_compile all .py files)
+      - name: "Check: syntax (py_compile all .py files)"
         run: |
           find . -name "*.py" \
             -not -path "./.venv/*" \
@@ -43,13 +43,13 @@ jobs:
             | xargs python -m py_compile
           echo "All .py files pass syntax check"
 
-      - name: Check: import app modules
+      - name: "Check: import app modules"
         run: |
           python -c "import app.main; print('app.main OK')"
           python -c "import app.chat; print('app.chat OK')"
           python -c "import app.onboarding_wizard; print('app.onboarding_wizard OK')"
 
-      - name: Check: import stillpoint modules
+      - name: "Check: import stillpoint modules"
         run: |
           python -c "import stillpoint.config; print('config OK')"
           python -c "import stillpoint.knowledge; print('knowledge OK')"
