@@ -4,7 +4,7 @@
 # Core
 gradio>=4.0
 chromadb>=0.4.0
-mempalace
+mempalace>=3.1.0
 pyyaml>=6.0
 jinja2>=3.1
 

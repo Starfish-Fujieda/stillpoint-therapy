@@ -12,6 +12,7 @@ MemPalace and ChromaDB degrade gracefully if unavailable.
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -53,6 +54,20 @@ def _get_palace_dir() -> Path:
     return palace_dir
 
 
+def _find_mempalace() -> str | None:
+    """Locate the mempalace binary.
+
+    Checks PATH first (system/homebrew/pipx installs), then falls back to
+    the venv bin directory — needed when run.sh calls .venv/bin/python
+    directly without activating the venv (so .venv/bin is not in PATH).
+    """
+    binary = shutil.which("mempalace")
+    if binary:
+        return binary
+    venv_bin = Path(sys.executable).parent / "mempalace"
+    return str(venv_bin) if venv_bin.exists() else None
+
+
 def _mempalace_mine(content: str) -> bool:
     """Mine session content into MemPalace for entity-aware memory.
 
@@ -62,7 +77,7 @@ def _mempalace_mine(content: str) -> bool:
     Returns True if mining succeeded, False if MemPalace is unavailable
     or the operation failed (failure is always non-fatal).
     """
-    binary = shutil.which("mempalace")
+    binary = _find_mempalace()
     if binary is None:
         return False
 
@@ -266,7 +281,7 @@ def get_wake_up_context() -> str:
         A summary string for the LLM at session start (~600-900 tokens
         when MemPalace is available, shorter plain summary otherwise).
     """
-    binary = shutil.which("mempalace")
+    binary = _find_mempalace()
     if binary is not None:
         palace_dir = _get_palace_dir()
         if any(palace_dir.iterdir()):
