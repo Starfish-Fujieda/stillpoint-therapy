@@ -8,10 +8,10 @@
 
 ## Current State
 
-**Last completed**: All post-MVP tasks complete (Tasks 14, 16, 20-31). 55 unit tests passing. App verified running at localhost:7860.
+**Last completed**: v2 features complete. ChromaDB semantic memory live. NotebookLM real CLI grounding live (11 therapy notebooks authenticated). Local TTS fallback chain (podcastfy → pyttsx3 → gTTS). 70 unit tests passing. App verified running at localhost:7860.
 **Last updated**: 2026-05-16
-**Next task**: v2 features — ChromaDB semantic memory (stillpoint/memory.py), local TTS podcast path (stillpoint/podcast.py), MemPalace integration
-**Open questions**: None
+**Next task**: None — project is feature-complete. Consider: real session data, additional notebook configuration, or production hardening.
+**Open questions**: MemPalace removed from scope — package does not exist on PyPI; ChromaDB covers the semantic memory use case.
 
 ---
 
