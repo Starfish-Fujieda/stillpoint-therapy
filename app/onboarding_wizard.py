@@ -392,9 +392,4 @@ def build_onboarding_view() -> gr.Button:
         ],
     )
 
-    # Load first question on init
-    app = gr.Blocks.get_context()
-    if app:
-        pass  # First question will render on load
-
     return done_btn

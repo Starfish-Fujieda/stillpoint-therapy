@@ -26,10 +26,11 @@ def _get_engine() -> SessionEngine:
     return _session_engine
 
 
-def build_chat_view() -> None:
+def build_chat_view():
     """Build the chat interface view.
 
-    Creates the Gradio components for the therapy chat.
+    Returns:
+        Tuple of (on_load_fn, on_load_outputs) to wire app.load() in the caller.
     """
     # --- Header ---
     with gr.Row():
@@ -43,8 +44,8 @@ def build_chat_view() -> None:
     chatbot = gr.Chatbot(
         label="",
         height=500,
-        show_copy_button=True,
-        bubble_full_width=False,
+        buttons=["copy"],
+        layout="bubble",
         avatar_images=(None, "🧘"),
     )
 
@@ -148,11 +149,7 @@ def build_chat_view() -> None:
         outputs=[chatbot, session_info, status_display],
     )
 
-    # Auto-start session when chat view becomes visible
-    chatbot.load(
-        fn=start_new_session,
-        outputs=[chatbot, session_info, status_display, msg_input],
-    )
+    return start_new_session, [chatbot, session_info, status_display, msg_input]
 
 
 def _get_status_text() -> str:

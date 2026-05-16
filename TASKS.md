@@ -8,9 +8,9 @@
 
 ## Current State
 
-**Last completed**: Tasks 27-31 (Dockerfile, docker-compose.yml, hipaa_prompt.md, onboarding guides, README.md, .github/workflows/validate.yml)
+**Last completed**: All post-MVP tasks complete (Tasks 14, 16, 20-31). 55 unit tests passing. App verified running at localhost:7860.
 **Last updated**: 2026-05-16
-**Next task**: Task 14 — `stillpoint/report.py` and Task 16 — `stillpoint/podcast.py` (library implementations needed to make generate_report.py and generate_podcast.py fully functional)
+**Next task**: v2 features — ChromaDB semantic memory (stillpoint/memory.py), local TTS podcast path (stillpoint/podcast.py), MemPalace integration
 **Open questions**: None
 
 ---

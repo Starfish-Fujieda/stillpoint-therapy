@@ -19,13 +19,7 @@ def build_app() -> gr.Blocks:
     """
     configured = is_configured()
 
-    with gr.Blocks(
-        title="Stillpoint",
-        theme=gr.themes.Soft(),
-        css="""
-        .contain { max-width: 900px; margin: auto; padding: 20px; }
-        """,
-    ) as app:
+    with gr.Blocks(title="Stillpoint") as app:
         # Two mutually-exclusive containers
         with gr.Column(visible=not configured, elem_id="onboarding_col") as onboarding_col:
             from app.onboarding_wizard import build_onboarding_view
@@ -35,7 +29,7 @@ def build_app() -> gr.Blocks:
             with gr.Tabs():
                 with gr.Tab("Chat"):
                     from app.chat import build_chat_view
-                    build_chat_view()
+                    chat_load_fn, chat_load_outputs = build_chat_view()
 
                 from app.reports import create_reports_tab
                 create_reports_tab()
@@ -54,6 +48,9 @@ def build_app() -> gr.Blocks:
             outputs=[onboarding_col, main_col],
         )
 
+        if configured:
+            app.load(fn=chat_load_fn, outputs=chat_load_outputs)
+
     return app
 
 
@@ -64,6 +61,8 @@ def main():
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
+        theme=gr.themes.Soft(),
+        css=".contain { max-width: 900px; margin: auto; padding: 20px; }",
     )
 
 
