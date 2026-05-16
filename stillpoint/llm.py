@@ -62,6 +62,8 @@ def send_message(
         return _send_google(system_prompt, messages, llm_config)
     elif provider == "ollama":
         return _send_ollama(system_prompt, messages, llm_config)
+    elif provider == "openrouter":
+        return _send_openrouter(system_prompt, messages, llm_config)
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
 
@@ -173,6 +175,47 @@ def _send_google(system_prompt: str, messages: list[dict], config: dict) -> str:
     except Exception as e:
         logger.error("Google AI error: %s", e)
         raise RuntimeError(f"Google AI error: {e}") from e
+
+
+def _send_openrouter(system_prompt: str, messages: list[dict], config: dict) -> str:
+    """Send a message via OpenRouter (OpenAI-compatible with attribution headers)."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError(
+            "openai package not installed. Install with: pip install openai"
+        )
+
+    api_key_env = config.get("api_key_env", "OPENROUTER_API_KEY")
+    api_key = os.environ.get(api_key_env)
+    if not api_key:
+        raise RuntimeError(
+            f"API key not found. Set the {api_key_env} environment variable."
+        )
+
+    model = config.get("model", "anthropic/claude-sonnet-4-5")
+    base_url = config.get("base_url", "https://openrouter.ai/api/v1")
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        default_headers={
+            "HTTP-Referer": "https://github.com/Starfish-Fujieda/stillpoint-therapy",
+            "X-Title": "Stillpoint Therapy",
+        },
+    )
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=full_messages,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.error("OpenRouter error: %s", e)
+        raise RuntimeError(f"OpenRouter error: {e}") from e
 
 
 def _send_ollama(system_prompt: str, messages: list[dict], config: dict) -> str:
