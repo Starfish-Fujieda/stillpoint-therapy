@@ -1,0 +1,48 @@
+# Generated user data (created during onboarding)
+config/therapist.yaml
+config/treatment_plan.yaml
+config/user_profile.yaml
+config/podcast.yaml
+personas/therapist.md
+personas/therapist.json
+
+# MemPalace persistent memory
+.mempalace/
+
+# Session data
+data/
+sessions/
+
+# IDE / editor configs
+.vscode/
+.continue/
+.cursor/
+.claude-sessions/
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+
+# Python / tooling artifacts
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+logs/
+
+# Large reference material
+stuff/
+
+# Playwright
+.playwright-mcp/
