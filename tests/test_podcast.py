@@ -1,0 +1,132 @@
+"""Tests for stillpoint.podcast (no actual notebooklm calls)."""
+
+import json
+from datetime import datetime
+from pathlib import Path
+
+import pytest
+import yaml
+
+import stillpoint.podcast as podcast
+from stillpoint.podcast import (
+    _get_notebooks,
+    _select_notebook,
+    generate_podcast,
+    list_generated_podcasts,
+)
+
+
+@pytest.fixture(autouse=True)
+def _redirect_podcast(project_root, monkeypatch):
+    monkeypatch.setattr(podcast, "get_project_root", lambda: project_root)
+
+
+# --- _get_notebooks ----------------------------------------------------------
+
+def test_get_notebooks_empty_when_no_config(project_root):
+    assert _get_notebooks() == []
+
+
+def test_get_notebooks_returns_list(project_root, therapist_config):
+    nbs = _get_notebooks()
+    assert len(nbs) == 2
+    assert nbs[0]["topic"] == "Anxiety"
+
+
+# --- _select_notebook --------------------------------------------------------
+
+def test_select_notebook_none_topic_returns_first(project_root, therapist_config):
+    nb = _select_notebook(None)
+    assert nb["topic"] == "Anxiety"
+
+
+def test_select_notebook_keyword_match(project_root, therapist_config):
+    nb = _select_notebook("managing worry")
+    assert nb["topic"] == "Anxiety"
+
+
+def test_select_notebook_second_keyword_match(project_root, therapist_config):
+    nb = _select_notebook("low mood treatment")
+    assert nb["topic"] == "Depression"
+
+
+def test_select_notebook_no_match_falls_back_to_first(project_root, therapist_config):
+    nb = _select_notebook("trauma and PTSD")
+    assert nb["topic"] == "Anxiety"
+
+
+def test_select_notebook_no_notebooks_returns_none(project_root):
+    assert _select_notebook("anxiety") is None
+
+
+# --- list_generated_podcasts -------------------------------------------------
+
+def test_list_generated_podcasts_empty_dir(project_root):
+    (project_root / "podcasts").mkdir()
+    assert list_generated_podcasts() == []
+
+
+def test_list_generated_podcasts_returns_metadata(project_root):
+    podcasts_dir = project_root / "podcasts"
+    podcasts_dir.mkdir()
+    mp3 = podcasts_dir / "20240101_120000_anxiety.mp3"
+    mp3.write_bytes(b"\xff\xfb" + b"\x00" * 100)
+
+    results = list_generated_podcasts()
+    assert len(results) == 1
+    assert results[0]["filename"] == "20240101_120000_anxiety.mp3"
+    assert "path" in results[0]
+    assert "size_bytes" in results[0]
+    assert results[0]["size_bytes"] == 102
+
+
+def test_list_generated_podcasts_sorted_newest_first(project_root):
+    podcasts_dir = project_root / "podcasts"
+    podcasts_dir.mkdir()
+    (podcasts_dir / "old.mp3").write_bytes(b"\x00" * 10)
+    (podcasts_dir / "new.mp3").write_bytes(b"\x00" * 20)
+    import time; time.sleep(0.01)
+
+    results = list_generated_podcasts()
+    assert len(results) == 2
+    # sorted newest-first means the one created most recently is index 0
+    filenames = [r["filename"] for r in results]
+    assert "new.mp3" in filenames
+
+
+# --- generate_podcast — method validation ------------------------------------
+
+def test_generate_podcast_local_raises_not_implemented(project_root):
+    with pytest.raises(NotImplementedError):
+        generate_podcast(method="local")
+
+
+def test_generate_podcast_invalid_method_raises_value_error(project_root):
+    with pytest.raises(ValueError):
+        generate_podcast(method="soundcloud")
+
+
+def test_generate_podcast_no_notebooklm_binary(project_root, therapist_config, monkeypatch):
+    monkeypatch.setattr(podcast.shutil, "which", lambda _: None)
+    with pytest.raises(RuntimeError, match="notebooklm CLI not found"):
+        generate_podcast(topic="anxiety")
+
+
+def test_generate_podcast_no_notebooks_raises(project_root, monkeypatch):
+    monkeypatch.setattr(podcast.shutil, "which", lambda _: "/usr/bin/notebooklm")
+    with pytest.raises(RuntimeError, match="No notebooks configured"):
+        generate_podcast(topic="anxiety")
+
+
+def test_generate_podcast_missing_notebook_id_raises(project_root, monkeypatch):
+    import yaml
+    config = {
+        "therapist": {
+            "notebooks": [{"topic": "Anxiety", "when_to_query": "anxiety"}]
+            # notebook_id intentionally omitted
+        }
+    }
+    (project_root / "config" / "therapist.yaml").write_text(yaml.dump(config))
+    monkeypatch.setattr(podcast.shutil, "which", lambda _: "/usr/bin/notebooklm")
+    with pytest.raises(RuntimeError, match="notebook_id"):
+        generate_podcast(topic="anxiety")
