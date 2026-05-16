@@ -98,11 +98,13 @@ PIPX_VENVS="$( { $PIPX environment --value PIPX_LOCAL_VENVS 2>/dev/null; } || tr
 [[ -n "$PIPX_VENVS" ]] || PIPX_VENVS="$HOME/.local/pipx/venvs"
 PLAYWRIGHT_BIN="$PIPX_VENVS/notebooklm-py/bin/playwright"
 if [[ -x "$PLAYWRIGHT_BIN" ]]; then
-  "$PLAYWRIGHT_BIN" install chromium
+  # --with-deps also installs the OS libraries Chromium needs to launch.
+  # No-op on macOS; on Linux it uses the system package manager (needs root/sudo).
+  "$PLAYWRIGHT_BIN" install --with-deps chromium
   ok "Chromium installed"
 else
   warn "Could not locate Playwright in the notebooklm-py venv."
-  warn "Run this manually:  $PIPX runpip notebooklm-py exec playwright install chromium"
+  warn "Run this manually:  $PIPX runpip notebooklm-py exec playwright install --with-deps chromium"
 fi
 
 # ---- 6. NotebookLM authentication -------------------------------------------
