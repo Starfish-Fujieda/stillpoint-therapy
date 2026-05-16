@@ -141,3 +141,10 @@ if ! command -v notebooklm >/dev/null 2>&1; then
   warn "'notebooklm' is not on your PATH in this shell."
   warn "Open a new terminal, or run:  export PATH=\"\$HOME/.local/bin:\$PATH\""
 fi
+
+echo
+echo "${BOLD}Setup complete.${RESET}"
+echo
+echo "To launch Stillpoint:"
+echo "    ${GREEN}bash run.sh${RESET}"
+echo
