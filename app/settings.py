@@ -144,7 +144,7 @@ def create_settings_tab() -> gr.Tab:
                 datatype=["str", "str", "str"],
                 value=_notebooks_to_rows(existing_notebooks),
                 row_count=(max(len(existing_notebooks), 3), "dynamic"),
-                col_count=(3, "fixed"),
+                column_count=(3, "fixed"),
                 interactive=True,
                 label="Notebooks",
                 wrap=True,
