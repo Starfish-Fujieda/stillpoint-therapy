@@ -8,9 +8,9 @@
 
 ## Current State
 
-**Last completed**: Project scaffold created (`.gitignore`, directory structure, `ARCHITECTURE.md`)
+**Last completed**: Tasks 1-3 (scaffold, requirements, package config, init files)
 **Last updated**: 2026-05-16
-**Next task**: Task 3 — Create `requirements.txt` + `pyproject.toml`
+**Next task**: Task 4 — Create `templates/source_library.yaml`
 **Open questions**: None
 
 ---
@@ -35,10 +35,10 @@ Tasks 3-5 (foundation) → Tasks 6-8 (templates) → Tasks 9-13 (core library) �
 - **Files**: `.gitignore`, directory structure
 - **Done criteria**: All directories exist, `.gitignore` is correct
 
-### Task 2 — Requirements & Package Config
+### Task 2 — Requirements & Package Config ✅
 
-- [ ] Create `requirements.txt` with all dependencies
-- [ ] Create `pyproject.toml` (or `setup.py`) for the `stillpoint` package
+- [x] Create `requirements.txt` with all dependencies
+- [x] Create `pyproject.toml` (or `setup.py`) for the `stillpoint` package
 - **Dependencies to include**:
   - `gradio>=4.0`
   - `chromadb>=0.4.0`
@@ -52,10 +52,10 @@ Tasks 3-5 (foundation) → Tasks 6-8 (templates) → Tasks 9-13 (core library) �
 - **Files**: `requirements.txt`, `pyproject.toml`
 - **Done criteria**: `pip install -e .` works
 
-### Task 3 — Placeholder `__init__.py` Files
+### Task 3 — Placeholder `__init__.py` Files ✅
 
-- [ ] Create `stillpoint/__init__.py` with version and package docstring
-- [ ] Create `app/__init__.py`
+- [x] Create `stillpoint/__init__.py` with version and package docstring
+- [x] Create `app/__init__.py`
 - **Files**: `stillpoint/__init__.py`, `app/__init__.py`
 - **Done criteria**: `import stillpoint` works
 
