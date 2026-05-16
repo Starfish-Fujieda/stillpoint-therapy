@@ -48,6 +48,22 @@ See the [Crisis Resources](#crisis-resources) section below.
 
 ---
 
+## Prerequisites
+
+**Python 3.11+** is required. macOS does not include Python by default.
+
+**Recommended (Homebrew):**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install python@3.11
+```
+
+**Alternative (no Homebrew):** Download and run the installer from [python.org/downloads](https://www.python.org/downloads/).
+
+Everything else (`pipx`, `notebooklm-py`, Chromium) is installed automatically by `scripts/setup.sh`.
+
+---
+
 ## Quick Start
 
 ```bash
