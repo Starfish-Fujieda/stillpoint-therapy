@@ -52,21 +52,18 @@ See the [Crisis Resources](#crisis-resources) section below.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/stillpoint-therapy.git
+git clone https://github.com/Starfish-Fujieda/stillpoint-therapy.git
 cd stillpoint-therapy
 
 # Run setup (creates a virtualenv, installs deps, sets up the NotebookLM CLI)
+# This will also prompt you to run `notebooklm login` if not yet authenticated.
 bash scripts/setup.sh
-
-# Authenticate NotebookLM (one-time, opens browser)
-notebooklm login
 
 # Set your LLM API key (or add to your shell profile)
 export ANTHROPIC_API_KEY="your-key-here"
 
-# Activate the virtualenv and launch
-source .venv/bin/activate
-python -m app.main
+# Launch
+bash run.sh
 ```
 
 Then open [http://localhost:7860](http://localhost:7860) in your browser.
