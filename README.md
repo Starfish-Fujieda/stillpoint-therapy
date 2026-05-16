@@ -43,6 +43,7 @@ See the [Crisis Resources](#crisis-resources) section below.
 - **An LLM API key** for at least one provider:
   - [Anthropic](https://console.anthropic.com/) (Claude — recommended)
   - [OpenAI](https://platform.openai.com/)
+  - [OpenRouter](https://openrouter.ai/) (access to many models via one key)
   - [Google AI](https://aistudio.google.com/)
   - Ollama (local, no API key needed)
 
@@ -110,8 +111,8 @@ Stillpoint remembers what you've discussed. At the start of each session,
 it loads relevant context from past sessions — not everything, just what's
 most relevant to what you're currently working on.
 
-Memory is stored locally in `~/.stillpoint/palace/`. Nothing is sent to
-any cloud service.
+Memory is stored locally in `data/palace/` inside the project directory.
+Nothing is sent to any cloud service.
 
 ### Clinical Knowledge Base (NotebookLM)
 
@@ -169,9 +170,17 @@ To change your LLM provider:
 ```yaml
 # config/therapist.yaml
 llm:
-  provider: openai          # anthropic | openai | google | ollama
+  provider: openai          # anthropic | openai | openrouter | google | ollama
   model: gpt-4o
   api_key_env: OPENAI_API_KEY
+```
+
+OpenRouter example:
+```yaml
+llm:
+  provider: openrouter
+  model: anthropic/claude-sonnet-4-5
+  api_key_env: OPENROUTER_API_KEY
 ```
 
 To add a new notebook after onboarding:
@@ -217,7 +226,7 @@ Stillpoint is designed for local use. Here is exactly what goes where:
 
 | Data | Where it lives | Who can access it |
 |------|---------------|-------------------|
-| Session notes | `~/.stillpoint/palace/` (local) | You only |
+| Session notes | `data/palace/` (local, project dir) | You only |
 | Config and personas | `config/`, `personas/` (local, gitignored) | You only |
 | Generated reports | Wherever you save them | You control |
 | In-session messages | Sent to your LLM provider (Anthropic, OpenAI, etc.) | Your provider's privacy policy applies |
@@ -238,16 +247,9 @@ Stillpoint is experimental software. Know these before you start:
   engine uses the LLM's training data, which is broader and less reliable.
   Responses will be labeled `[UNGROUNDED]`.
 
-- **Session memory is file-based in the current MVP.** ChromaDB vector search
-  is configured but the MVP uses JSON file storage. This means semantic search
-  across sessions is limited until ChromaDB is fully integrated.
-
 - **The onboarding wizard generates config but cannot populate notebooks.**
   You create the NotebookLM notebooks and add sources manually. The wizard
   tells you exactly what to create and why.
-
-- **Report and podcast generation are stub implementations in the current MVP.**
-  The UI exists; the underlying generation logic is in progress.
 
 - **No multi-user support.** This is a single-user local tool.
 
