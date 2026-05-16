@@ -1,10 +1,18 @@
 """Session memory interface for Stillpoint.
 
-Uses ChromaDB for semantic vector search with JSON file fallback.
-If ChromaDB is not installed, falls back to file-based text search.
+Three-layer memory architecture:
+  1. JSON files   — durable source of truth, always written
+  2. ChromaDB     — semantic vector search over raw session blobs
+  3. MemPalace    — entity-aware mining (people, themes, relationships)
+                    enables pattern identification across sessions
+
+MemPalace and ChromaDB degrade gracefully if unavailable.
 """
 
 import json
+import shutil
+import subprocess
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -33,11 +41,49 @@ def _get_memory_dir() -> Path:
     return memory_dir
 
 
-def _get_chroma_dir() -> Path:
-    """Return the ChromaDB persistence directory, creating it if needed."""
-    chroma_dir = get_project_root() / "data" / "chroma"
-    chroma_dir.mkdir(parents=True, exist_ok=True)
-    return chroma_dir
+def _get_palace_dir() -> Path:
+    """Return the shared palace directory for MemPalace and ChromaDB.
+
+    Both MemPalace (mempalace_drawers collection) and our direct semantic
+    search (sessions collection) share this single ChromaDB store — the
+    same pattern used in the reference therapy project.
+    """
+    palace_dir = get_project_root() / "data" / "palace"
+    palace_dir.mkdir(parents=True, exist_ok=True)
+    return palace_dir
+
+
+def _mempalace_mine(content: str) -> bool:
+    """Mine session content into MemPalace for entity-aware memory.
+
+    Uses convos mode with general extraction to capture people, themes,
+    and relationships — not just keyword-matched text blobs.
+
+    Returns True if mining succeeded, False if MemPalace is unavailable
+    or the operation failed (failure is always non-fatal).
+    """
+    binary = shutil.which("mempalace")
+    if binary is None:
+        return False
+
+    palace = str(_get_palace_dir())
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            (Path(tmp_dir) / "session.md").write_text(content, encoding="utf-8")
+
+            subprocess.run(
+                [binary, "--palace", palace, "init", tmp_dir, "--yes"],
+                capture_output=True, timeout=60,
+            )
+            result = subprocess.run(
+                [binary, "--palace", palace, "mine", tmp_dir,
+                 "--wing", "therapy", "--mode", "convos", "--extract", "general"],
+                capture_output=True, timeout=120,
+            )
+            return result.returncode == 0
+    except Exception:
+        return False
 
 
 def _get_collection():
@@ -48,7 +94,7 @@ def _get_collection():
         return None
 
     # Re-initialise if the storage path has changed (e.g. between tests).
-    expected_path = str(_get_chroma_dir())
+    expected_path = str(_get_palace_dir())
     if _chroma_path != expected_path:
         _chroma_client = None
         _chroma_collection = None
@@ -101,13 +147,17 @@ def _text_search(query: str, results: int) -> list[str]:
 
 
 def save_session_notes(content: str) -> bool:
-    """Save session notes to JSON storage and ChromaDB.
+    """Save session notes to all three memory layers.
+
+    1. JSON file — durable source of truth
+    2. ChromaDB sessions collection (in the palace) — semantic search
+    3. MemPalace mine — entity extraction for pattern identification
 
     Args:
         content: The session notes text to save.
 
     Returns:
-        True if saved successfully.
+        True if saved successfully (JSON write always succeeds or raises).
     """
     now = datetime.now()
     session_id = now.strftime("%Y%m%d_%H%M%S")
@@ -142,6 +192,9 @@ def save_session_notes(content: str) -> bool:
             )
         except Exception:
             pass  # ChromaDB failure is non-fatal; JSON is the source of truth.
+
+    # Mine into MemPalace for entity-aware pattern identification.
+    _mempalace_mine(content)  # failure is non-fatal
 
     return True
 
@@ -205,9 +258,29 @@ def get_recent_sessions(count: int = 3) -> list[str]:
 def get_wake_up_context() -> str:
     """Get condensed context for session start.
 
+    Tries MemPalace wake-up first (entity-aware L0+L1 briefing scoped to
+    the therapy wing). Falls back to a JSON-derived summary when MemPalace
+    is unavailable or the palace is empty.
+
     Returns:
-        A summary string of recent sessions and key context.
+        A summary string for the LLM at session start (~600-900 tokens
+        when MemPalace is available, shorter plain summary otherwise).
     """
+    binary = shutil.which("mempalace")
+    if binary is not None:
+        palace_dir = _get_palace_dir()
+        if any(palace_dir.iterdir()):
+            try:
+                result = subprocess.run(
+                    [binary, "--palace", str(palace_dir), "wake-up", "--wing", "therapy"],
+                    capture_output=True, text=True, timeout=30,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+            except Exception:
+                pass
+
+    # Fallback: JSON-based summary.
     count = get_session_count()
     if count == 0:
         return "This is the first session."
