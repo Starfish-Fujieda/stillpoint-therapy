@@ -8,9 +8,9 @@
 
 ## Current State
 
-**Last completed**: Tasks 1-19 (MVP build — all core functionality)
+**Last completed**: Tasks 27-31 (Dockerfile, docker-compose.yml, hipaa_prompt.md, onboarding guides, README.md, .github/workflows/validate.yml)
 **Last updated**: 2026-05-16
-**Next task**: Task 20 — Report UI, or polish/testing of existing MVP
+**Next task**: Task 14 — `stillpoint/report.py` and Task 16 — `stillpoint/podcast.py` (library implementations needed to make generate_report.py and generate_podcast.py fully functional)
 **Open questions**: None
 
 ---
@@ -169,23 +169,29 @@ Tasks 3-5 (foundation) → Tasks 6-8 (templates) → Tasks 9-13 (core library) �
 
 ### Task 14 — `stillpoint/report.py` — Report Generation
 
-- [ ] Implement session report generation
+- [x] Implement session report generation
 - **Files**: `stillpoint/report.py`
 
 ### Task 16 — `stillpoint/podcast.py` — Podcast Generation
 
-- [ ] Implement podcast generation (NotebookLM path first)
+- [x] Implement podcast generation (NotebookLM path first)
 - **Files**: `stillpoint/podcast.py`
 
-### Task 20 — `app/reports.py` — Report UI
+### Task 20 — `app/reports.py` — Report UI ✅
 
-- [ ] Create report generation interface
+- [x] Create report generation interface
 - **Files**: `app/reports.py`
+- **Note**: Calls `stillpoint.report.generate_session_report()` via lazy import; shows a clear
+  "not yet available" message until Task 14 is merged. Includes date range, section toggles,
+  anonymize toggle, and Markdown download.
 
-### Task 21 — `app/settings.py` — Settings UI
+### Task 21 — `app/settings.py` — Settings UI ✅
 
-- [ ] Create config management interface
+- [x] Create config management interface
 - **Files**: `app/settings.py`
+- **Note**: Edits LLM backend, notebooks (via Dataframe), therapist preferences, and referral
+  resources. Validates notebook topics before saving. Both tabs wired into `app/main.py` via
+  `gr.Tabs()`.
 
 ### Task 22 — `scripts/setup.sh` ✅
 
@@ -195,51 +201,60 @@ Tasks 3-5 (foundation) → Tasks 6-8 (templates) → Tasks 9-13 (core library) �
   and Chromium, then prompts for the one-time `notebooklm login`. `notebooklm` is an
   external pipx CLI, not a pip dependency — it is not in `requirements.txt`.
 
-### Task 23 — `scripts/save_session.py`
+### Task 23 — `scripts/save_session.py` ✅
 
-- [ ] Create generalized CLI session saver
+- [x] Create generalized CLI session saver
 - **Files**: `scripts/save_session.py`
+- **Note**: Reads from `config/sessions/` JSON store. Supports `--list`, `--session-id`, `--output`. Default export to `exports/session_YYYY-MM-DD.md`.
 
-### Task 24 — `scripts/generate_report.py`
+### Task 24 — `scripts/generate_report.py` ✅
 
-- [ ] Create CLI report generator
+- [x] Create CLI report generator
 - **Files**: `scripts/generate_report.py`
+- **Note**: Calls `stillpoint.report.generate_session_report()`. Handles `ImportError` gracefully with a clear message. Supports `--since`, `--sections`, `--anonymize`, `--output`.
 
-### Task 25 — `scripts/generate_podcast.py`
+### Task 25 — `scripts/generate_podcast.py` ✅
 
-- [ ] Create CLI podcast generator
+- [x] Create CLI podcast generator
 - **Files**: `scripts/generate_podcast.py`
+- **Note**: Calls `stillpoint.podcast.generate_podcast()`. Handles `ImportError` gracefully. Supports `--topic`, `--method` (notebooklm|local), `--output-dir`.
 
-### Task 26 — `scripts/podcast_gap_analyzer.py`
+### Task 26 — `scripts/podcast_gap_analyzer.py` ✅
 
-- [ ] Create topic coverage gap analyzer
+- [x] Create topic coverage gap analyzer
 - **Files**: `scripts/podcast_gap_analyzer.py`
+- **Note**: Reads `templates/source_library.yaml` and scans `podcasts/` dir. Ranks uncovered topics by priority (required topics first, then by treatment goal relevance). Supports `--suggest` for next-topic recommendation.
 
-### Task 27 — Dockerfile + docker-compose.yml
+### Task 27 — Dockerfile + docker-compose.yml ✅
 
-- [ ] Create `Dockerfile`
-- [ ] Create `docker-compose.yml`
+- [x] Create `Dockerfile`
+- [x] Create `docker-compose.yml`
 - **Files**: `Dockerfile`, `docker-compose.yml`
+- **Note**: NotebookLM CLI cannot be containerized (browser auth required). Documented in Dockerfile comments. All other features work. Named volume `palace_data` persists ChromaDB across container restarts.
 
-### Task 28 — `hipaa_prompt.md`
+### Task 28 — `hipaa_prompt.md` ✅
 
-- [ ] Port from `therapy/hipaa_prompt.md`
+- [x] Create `hipaa_prompt.md`
 - **Files**: `hipaa_prompt.md`
+- **Note**: Covers all 18 HIPAA PHI categories, includes a copyable scanning prompt, redaction guidance, and a table of what Stillpoint stores locally.
 
-### Task 29 — Onboarding Guides (v2 reference)
+### Task 29 — Onboarding Guides (v2 reference) ✅
 
-- [ ] Create onboarding guide documents
-- **Files**: `onboarding/guide_character_design.md`, etc.
+- [x] Create onboarding guide documents
+- **Files**: `onboarding/guide_character_design.md`, `onboarding/guide_notebook_planning.md`, `onboarding/guide_source_selection.md`
+- **Note**: Three guides created. `guide_source_selection.md` covers all 14 tailored notebook topics with sourced book recommendations.
 
-### Task 30 — `README.md`
+### Task 30 — `README.md` ✅
 
-- [ ] Create comprehensive README
+- [x] Create comprehensive README
 - **Files**: `README.md`
+- **Note**: Covers quickstart, features, config, Docker limitation, privacy model, limitations (honest about MVP state), crisis resources, and acknowledgments.
 
-### Task 31 — `.github/workflows/validate.yml`
+### Task 31 — `.github/workflows/validate.yml` ✅
 
-- [ ] Create GitHub Actions workflow
+- [x] Create GitHub Actions workflow
 - **Files**: `.github/workflows/validate.yml`
+- **Note**: No `tests/` directory exists so CI runs import checks + py_compile across all .py files. Checks both `stillpoint.*` and `app.*` modules individually.
 
 ---
 

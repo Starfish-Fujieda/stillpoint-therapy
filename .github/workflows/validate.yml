@@ -1,0 +1,60 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Syntax and import checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # notebooklm-py is an external CLI installed via pipx in the native
+          # setup flow. It is not in requirements.txt and is not needed for CI.
+          pip install -r requirements.txt
+
+      - name: Install stillpoint package
+        run: pip install -e . --no-deps
+
+      - name: Check: import stillpoint
+        run: python -c "import stillpoint; print(f'stillpoint {stillpoint.__version__} imported OK')"
+
+      - name: Check: syntax (py_compile all .py files)
+        run: |
+          find . -name "*.py" \
+            -not -path "./.venv/*" \
+            -not -path "./node_modules/*" \
+            -not -path "./.git/*" \
+            | xargs python -m py_compile
+          echo "All .py files pass syntax check"
+
+      - name: Check: import app modules
+        run: |
+          python -c "import app.main; print('app.main OK')"
+          python -c "import app.chat; print('app.chat OK')"
+          python -c "import app.onboarding_wizard; print('app.onboarding_wizard OK')"
+
+      - name: Check: import stillpoint modules
+        run: |
+          python -c "import stillpoint.config; print('config OK')"
+          python -c "import stillpoint.knowledge; print('knowledge OK')"
+          python -c "import stillpoint.memory; print('memory OK')"
+          python -c "import stillpoint.persona; print('persona OK')"
+          python -c "import stillpoint.session; print('session OK')"
+          python -c "import stillpoint.llm; print('llm OK')"
+          python -c "import stillpoint.onboarding; print('onboarding OK')"

@@ -1,0 +1,44 @@
+# Stillpoint — Docker Compose
+#
+# Starts the Gradio web UI at http://localhost:7860
+#
+# NOTE: NotebookLM grounding is NOT available in the container (browser auth
+# required). All other features work normally.
+#
+# Usage:
+#   docker compose up              # foreground, Ctrl-C to stop
+#   docker compose up -d           # detached (background)
+#   docker compose logs -f         # tail logs when running detached
+#   docker compose down            # stop and remove containers
+#
+# Required env vars (set in your shell or .env file):
+#   ANTHROPIC_API_KEY   — for Anthropic/Claude backend
+#   OPENAI_API_KEY      — for OpenAI backend
+#   GOOGLE_API_KEY      — for Google Gemini backend
+#   (none needed for Ollama — configure base_url in config/therapist.yaml)
+#
+# All three are optional; only the key matching your chosen provider is used.
+# Never commit your .env file.
+
+services:
+  stillpoint:
+    build: .
+    ports:
+      - "7860:7860"
+    volumes:
+      # User-generated config and personas persist across container restarts.
+      - ./config:/app/config
+      - ./personas:/app/personas
+      # ChromaDB / MemPalace vector store. Named volume for durability.
+      - palace_data:/root/.stillpoint/palace
+    environment:
+      # Pass API keys from the host environment (or a .env file).
+      # Only the key matching your configured provider in therapist.yaml is used.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  # Named volume so ChromaDB data persists even if the container is recreated.
+  palace_data:
