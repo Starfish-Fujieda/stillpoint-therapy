@@ -1,7 +1,7 @@
 """Podcast generation for Stillpoint.
 
 Primary path: NotebookLM Audio Overview via the notebooklm CLI (pipx).
-Secondary path: local TTS via Podcastfy — not yet implemented (v2).
+Secondary path: local TTS via Podcastfy / pyttsx3 / gTTS (v2).
 """
 
 import json
@@ -69,25 +69,87 @@ def _run(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
 
+def _generate_local_podcast(topic: str | None, output_dir: Path) -> str:
+    """Try each available TTS engine in order and return the output file path.
+
+    Preference order: podcastfy (best quality) > pyttsx3 (offline) > gtts (online).
+
+    Raises:
+        RuntimeError: When no TTS engine is installed.
+    """
+    from stillpoint.memory import get_recent_sessions
+
+    topic_label = topic or "therapy"
+    safe_label = "".join(c if c.isalnum() or c in "-_" else "_" for c in topic_label)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    sessions = get_recent_sessions(3)
+    content = f"Therapy podcast on {topic_label}.\n\n" + "\n\n".join(sessions)
+
+    # --- podcastfy (best quality, podcast-style dialogue) ---
+    try:
+        import podcastfy  # type: ignore[import]
+
+        filename = f"{timestamp}_{safe_label}_local.mp3"
+        output_path = output_dir / filename
+        podcastfy.generate(text=content, output=str(output_path))
+        logger.info("Podcast saved via podcastfy to %s", output_path)
+        return str(output_path)
+    except ImportError:
+        pass
+
+    # --- pyttsx3 (offline TTS, produces .wav) ---
+    try:
+        import pyttsx3  # type: ignore[import]
+
+        filename = f"{timestamp}_{safe_label}_local.wav"
+        output_path = output_dir / filename
+        engine = pyttsx3.init()
+        engine.save_to_file(content, str(output_path))
+        engine.runAndWait()
+        logger.info("Podcast saved via pyttsx3 to %s", output_path)
+        return str(output_path)
+    except ImportError:
+        pass
+
+    # --- gtts (Google TTS, requires internet) ---
+    try:
+        from gtts import gTTS  # type: ignore[import]
+
+        filename = f"{timestamp}_{safe_label}_local.mp3"
+        output_path = output_dir / filename
+        tts = gTTS(text=content, lang="en")
+        tts.save(str(output_path))
+        logger.info("Podcast saved via gTTS to %s", output_path)
+        return str(output_path)
+    except ImportError:
+        pass
+
+    raise RuntimeError(
+        "No TTS engine available for local podcast generation. "
+        "Install one of: podcastfy, pyttsx3, or gtts.\n"
+        "  pip install podcastfy   # Best quality, podcast-style dialogue\n"
+        "  pip install pyttsx3     # Offline TTS\n"
+        "  pip install gtts        # Google TTS (requires internet)"
+    )
+
+
 def generate_podcast(topic: str | None = None, method: str = "notebooklm") -> str:
     """Generate a therapy podcast episode.
 
     Args:
         topic: Topic to generate about. If None, uses the first configured notebook.
-        method: "notebooklm" (Audio Overview via CLI) or "local" (Podcastfy — not implemented).
+        method: "notebooklm" (Audio Overview via CLI) or "local" (podcastfy/pyttsx3/gtts).
 
     Returns:
         Absolute path to the generated audio file.
 
     Raises:
         ValueError: If method is unknown.
-        NotImplementedError: If method is "local".
-        RuntimeError: If the notebooklm CLI is unavailable or generation fails.
+        RuntimeError: If the notebooklm CLI is unavailable, generation fails,
+                      or no TTS engine is installed for the "local" method.
     """
     if method == "local":
-        raise NotImplementedError(
-            "Local TTS via Podcastfy is a v2 feature and not yet implemented."
-        )
+        return _generate_local_podcast(topic, _get_podcasts_dir())
     if method != "notebooklm":
         raise ValueError(f"Unknown method: {method!r}. Use 'notebooklm' or 'local'.")
 

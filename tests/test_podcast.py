@@ -96,8 +96,9 @@ def test_list_generated_podcasts_sorted_newest_first(project_root):
 
 # --- generate_podcast — method validation ------------------------------------
 
-def test_generate_podcast_local_raises_not_implemented(project_root):
-    with pytest.raises(NotImplementedError):
+def test_generate_podcast_local_no_tts_raises(project_root):
+    """With no TTS packages installed, local method raises RuntimeError."""
+    with pytest.raises(RuntimeError, match="No TTS engine available"):
         generate_podcast(method="local")
 
 
