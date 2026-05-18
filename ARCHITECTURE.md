@@ -297,20 +297,29 @@ def validate_persona() -> list[str]:
 
 ```python
 def generate_session_report(sessions: list[str] | None = None) -> str:
-    """Generate a structured markdown report from session data.
-    
-    If sessions is None, report on all sessions since last report.
-    
-    Report sections:
-    1. Themes Covered
-    2. Goal Progress
-    3. New Disclosures
-    4. Coping Strategies Attempted
-    5. Emotional Trajectory
-    6. Red Flags (if any)
-    7. Patterns Observed
-    8. Homework/Practices Assigned
-    9. Client's Own Words (anonymizable)
+    """Generate a structured markdown report for a human therapist.
+
+    Raw observations only — no clinical interpretation. If sessions is None,
+    report on all sessions since the last report.
+
+    Report sections (Safety first):
+    1. Red Flags
+    2. Themes Covered
+    3. Goal Progress
+    4. New Disclosures
+    5. Coping Strategies Attempted
+    6. Homework/Practices Assigned
+    7. Client's Own Words (anonymizable)
+    """
+
+
+def generate_interpretation_log(sessions: list[str] | None = None) -> str:
+    """Generate the tool's private interpretation of recent sessions.
+
+    A separate artifact kept by the user — NOT for the human therapist. Holds
+    the tool's interpretive read (Emotional Trajectory, Patterns Observed) so
+    the user can compare it against their therapist's view and correct the
+    tool's prompts where the two diverge.
     """
 ```
 
@@ -377,7 +386,7 @@ If config exists → show chat interface
 Multi-step wizard with 6 phases:
 
 1. **Welcome** — What is Stillpoint, what to expect, consent
-2. **Character Design** — Interview about therapist preferences (gender, age, style, specializations)
+2. **Character Design** — Interview about therapist preferences (communication style, specializations, human-therapist modality)
 3. **Infrastructure Setup** — Guided setup of NotebookLM + MemPalace (with `setup.sh` integration)
 4. **Notebook Planning** — Interview about clinical concerns → proposed notebook topology
 5. **Source Recommendations** — For each notebook, suggest books/sources with explanations
@@ -404,24 +413,22 @@ Multi-step wizard with 6 phases:
 
 The onboarding wizard guides users through these evidence-based factors for choosing a therapist:
 
-1. **Therapeutic Alliance** — The #1 predictor of therapy outcomes (not modality, not experience). The user needs to feel safe, understood, and not judged. The character should be designed so the user *wants* to talk to them.
+1. **Therapeutic Alliance** — The #1 predictor of therapy outcomes (not modality, not experience). The user needs to feel safe, understood, and not judged. The persona should be configured so the user *wants* to engage with it.
 
-2. **Identity Matching** — Research shows clients often benefit from therapists who share or deeply understand their cultural, gender, or life-experience background. Options:
-   - Gender preference (same gender, different gender, no preference)
-   - Cultural background (shared culture, cross-cultural, no preference)
-   - Age proximity (similar age, older mentor figure, no preference)
-   - Life experience overlap (expat, recovery, parenthood, LGBTQ+, etc.)
-
-3. **Communication Style** — How the therapist talks:
+2. **Communication Style** — How the tool talks:
    - Direct/challenging vs. gentle/unhurried
    - Structured (agenda-driven) vs. organic (follows the client's lead)
    - Uses humor or doesn't
    - Asks questions vs. offers interpretations
    - Formal vs. casual
 
-4. **Specialization Alignment** — The therapist should have experience with the user's specific concerns. The wizard maps concerns to specializations.
+3. **Specialization Alignment** — The persona should be configured for the user's specific concerns. The wizard maps concerns to specializations.
 
-5. **Therapeutic Approach** — Default is ACT + IFS (the framework's foundation). Users can request alternatives (CBT, DBT, psychodynamic, etc.) which affects the source library recommendations.
+4. **Therapeutic Approach** — Default is ACT + IFS (the framework's foundation). Users can request alternatives (CBT, DBT, psychodynamic, etc.) which affects the source library recommendations.
+
+5. **Modality Alignment** — If the user is also in human therapy, onboarding records that therapist's modality (ACT, DBT, CBT, psychodynamic, somatic, other/mixed). The persona references it so the tool's framing stays coherent with the therapy room.
+
+> **Settled decision reversed (2026-05).** An earlier settled decision included an **Identity Matching** factor — configuring the persona's gender presentation, cultural background, age proximity, and life-experience overlap to match the user. This has been removed. Stillpoint deliberately does **not** present the tool as a person: it is an AI-assisted tool that augments human therapy, and giving it a human identity (age, biography, gender, lived experience) misrepresents what it is. The de-anthropomorphization decision was signed off by Richard, overriding the prior "settled" status of identity matching.
 
 ### Default Character: Eli (Onboarding Guide)
 
@@ -543,17 +550,29 @@ The system also detects patterns during sessions and adds adaptations to `config
 
 ### What a Human Therapist Would Want to Know
 
-A structured report includes:
+The therapist-facing report contains **raw observations only** — no clinical
+interpretation. Interpretation is the human therapist's job; the tool offering
+its own read inside this report would risk anchoring or contradicting them.
+Sections, Safety first:
 
-1. **Themes Covered** — What the client worked on (not raw transcripts)
-2. **Goal Progress** — Movement on stated treatment goals
-3. **New Disclosures** — Anything raised for the first time
-4. **Coping Strategies Attempted** — What was tried, what worked/didn't
-5. **Emotional Trajectory** — Trends across sessions (improving, stable, declining)
-6. **Red Flags** — Any crisis language, escalation, new risky behaviors
-7. **Patterns Observed** — Recurring themes, avoidance patterns, breakthroughs
-8. **Homework/Practices Assigned** — Between-session work suggested
-9. **Client's Own Assessment** — What they found helpful/unhelpful
+1. **Red Flags** — Any crisis language, escalation, new risky behaviors
+2. **Themes Covered** — What the client worked on (not raw transcripts)
+3. **Goal Progress** — Movement on stated treatment goals
+4. **New Disclosures** — Anything raised for the first time
+5. **Coping Strategies Attempted** — What was tried, what worked/didn't
+6. **Homework/Practices Assigned** — Between-session work suggested
+7. **Client's Own Assessment** — What they found helpful/unhelpful
+
+The report carries a provenance header naming the AI tool that produced it.
+
+### Private Interpretation Log
+
+The tool's interpretive read — **Emotional Trajectory** and **Patterns
+Observed** — moves to a separate artifact, `generate_interpretation_log()`.
+This log stays with the user; it is explicitly **not for the human therapist**.
+Its purpose is comparison: the user holds the tool's interpretation against what
+their therapist observes, and where the two diverge, that gap is a signal for
+correcting how the tool is prompted.
 
 ### Privacy Controls
 

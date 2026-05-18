@@ -5,7 +5,7 @@ Ties together persona, memory, knowledge, and LLM components.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from stillpoint.config import load_config, save_config
 from stillpoint.knowledge import query_knowledge
@@ -52,20 +52,56 @@ class SessionEngine:
         )
         total_contacts = treatment_plan.get("exit_ramp", {}).get("total_contacts", 0)
 
-        # Check if meta-question is due
+        # Check if the meta-question is due — and distinguish due vs OVERDUE.
+        # Due: the cadence interval has been reached.
+        # Overdue: the cadence interval has been exceeded (or never asked past it).
         meta_due = False
+        meta_overdue = False
         last_meta = treatment_plan.get("exit_ramp", {}).get("last_meta_question_session")
         if last_meta is None:
-            meta_due = session_count > 0 and session_count % exit_ramp_cadence == 0
+            if session_count >= exit_ramp_cadence:
+                meta_due = True
+                meta_overdue = session_count > exit_ramp_cadence
         else:
             sessions_since = session_count - last_meta
-            meta_due = sessions_since >= exit_ramp_cadence
+            if sessions_since >= exit_ramp_cadence:
+                meta_due = True
+                meta_overdue = sessions_since > exit_ramp_cadence
+
+        # Build usage signals for the session-start status line.
+        usage_signals = treatment_plan.get("usage_signals", {})
+        session_log = treatment_plan.get("session_log", [])
+        cutoff = datetime.now() - timedelta(days=7)
+        contacts_last_week = 0
+        for entry in session_log:
+            try:
+                entry_dt = datetime.fromisoformat(entry.get("date", ""))
+            except (ValueError, TypeError):
+                continue
+            if entry_dt >= cutoff:
+                contacts_last_week += 1
+
+        if meta_overdue:
+            meta_status = "overdue"
+        elif meta_due:
+            meta_status = "due"
+        else:
+            meta_status = usage_signals.get("meta_question_status") or "on track"
+
+        usage = {
+            "sessions_completed": session_count,
+            "contacts_last_week": contacts_last_week,
+            "trigger_time_contacts": usage_signals.get("trigger_time_contacts", 0),
+            "meta_question_status": meta_status,
+        }
 
         self.session_context = {
             "session_count": session_count,
             "wake_up_context": wake_up,
             "treatment_plan": treatment_plan,
             "meta_question_due": meta_due,
+            "meta_question_overdue": meta_overdue,
+            "usage_signals": usage,
         }
 
         self.conversation = []
@@ -82,7 +118,14 @@ class SessionEngine:
         else:
             context_note = f"Session context:\n{wake_up}"
 
-        if meta_due:
+        if meta_overdue:
+            context_note += (
+                "\n\nNOTE: The meta-question is OVERDUE. Before beginning clinical "
+                "work this session, check in on the arrangement itself — ask "
+                "something like: 'How is this arrangement fitting into your life?' "
+                "Do not defer this to the end of the session."
+            )
+        elif meta_due:
             context_note += (
                 "\n\nNOTE: A meta-question is due this session. "
                 "At an appropriate moment, ask something like: "
@@ -112,6 +155,8 @@ class SessionEngine:
             "opening_message": opening_response,
             "session_count": session_count,
             "meta_question_due": meta_due,
+            "meta_question_overdue": meta_overdue,
+            "usage_signals": usage,
         }
 
     def process_message(self, user_message: str) -> str:
@@ -257,6 +302,16 @@ class SessionEngine:
             "notes_preview": session_notes[:200],
         })
         plan["session_log"] = session_log
+
+        # Maintain usage signals at session end.
+        usage_signals = plan.get("usage_signals", {})
+        usage_signals.setdefault("trigger_time_contacts", 0)
+        if self.session_context.get("meta_question_due"):
+            usage_signals["meta_question_status"] = (
+                f"addressed (session {self.session_context.get('session_count', '?')})"
+            )
+        usage_signals.setdefault("meta_question_status", "")
+        plan["usage_signals"] = usage_signals
 
         save_config("treatment_plan.yaml", plan)
 

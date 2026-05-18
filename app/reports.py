@@ -16,15 +16,15 @@ from typing import Any
 
 import gradio as gr
 
-# The 9 report sections defined in ARCHITECTURE.md
+# Raw therapist-facing report sections (Safety first). Interpretive sections
+# — Emotional Trajectory, Patterns Observed — live in the private
+# interpretation log, not in the therapist report.
 REPORT_SECTIONS = [
+    "Red Flags",
     "Themes Covered",
     "Goal Progress",
     "New Disclosures",
     "Coping Strategies Attempted",
-    "Emotional Trajectory",
-    "Red Flags",
-    "Patterns Observed",
     "Homework / Practices Assigned",
     "Client's Own Assessment",
 ]
@@ -59,6 +59,27 @@ def _call_generate_report(
         sessions = [f"date_range:{start_date}:{end_date}"]
 
     return generate_session_report(sessions=sessions, anonymize=anonymize)
+
+
+def _call_generate_interpretation_log() -> str:
+    """Delegate to stillpoint.report.generate_interpretation_log().
+
+    Produces the tool's private interpretation of recent sessions — a separate
+    artifact the user keeps for themselves, not for their human therapist.
+    """
+    try:
+        from stillpoint.report import generate_interpretation_log  # type: ignore[import]
+    except ImportError:
+        return (
+            "**The interpretation log is not yet available.**\n\n"
+            "`stillpoint.report` has not been installed. "
+            "Run `pip install -e .` to activate this feature."
+        )
+
+    try:
+        return generate_interpretation_log()
+    except ValueError as e:
+        return f"_{e}_"
 
 
 def _write_temp_markdown(content: str) -> str:
@@ -227,6 +248,68 @@ def create_reports_tab() -> gr.Tab:
             fn=on_download,
             inputs=[report_output],
             outputs=[download_file],
+        )
+
+        # ------------------------------------------------------------------ #
+        # Section 4: Private interpretation log                                #
+        # ------------------------------------------------------------------ #
+        with gr.Group():
+            gr.Markdown("### Private Interpretation Log")
+            gr.Markdown(
+                "Stillpoint's own interpretation of your recent sessions — "
+                "emotional trajectory and patterns it thinks it sees. "
+                "**This is for you, not for your therapist.** Keep it as a private "
+                "record to compare against what your human therapist observes."
+            )
+
+            interp_btn = gr.Button(
+                "Generate Interpretation Log", variant="secondary", size="lg"
+            )
+            interp_status = gr.Markdown(value="")
+            interp_output = gr.Markdown(value="", label="Interpretation Log", visible=False)
+            interp_download_btn = gr.Button(
+                "Download Interpretation Log", variant="secondary", visible=False
+            )
+            interp_download_file = gr.File(
+                label="Download (not for your therapist)",
+                visible=False,
+                interactive=False,
+            )
+
+        def on_generate_interp() -> tuple[Any, ...]:
+            """Generate the private interpretation log and surface it."""
+            content = _call_generate_interpretation_log()
+            if not content:
+                return (
+                    gr.update(value="No sessions found for the selected range."),
+                    gr.update(visible=False),
+                    gr.update(visible=False),
+                    gr.update(visible=False),
+                )
+            return (
+                gr.update(value="Interpretation log generated — keep this for yourself."),
+                gr.update(value=content, visible=True),
+                gr.update(visible=True),
+                gr.update(visible=False),
+            )
+
+        interp_btn.click(
+            fn=on_generate_interp,
+            inputs=[],
+            outputs=[interp_status, interp_output, interp_download_btn, interp_download_file],
+        )
+
+        def on_download_interp(log_content: str) -> tuple[Any, ...]:
+            """Write the interpretation log to a temp file for download."""
+            if not log_content:
+                return gr.update(visible=False)
+            path = _write_temp_markdown(log_content)
+            return gr.update(value=path, visible=True)
+
+        interp_download_btn.click(
+            fn=on_download_interp,
+            inputs=[interp_output],
+            outputs=[interp_download_file],
         )
 
     return tab

@@ -18,11 +18,12 @@ custom therapist takes over.
 
 You're creating a clinical profile that includes:
 
-- A name (or first name only, or initials — your choice)
-- A description: background, life experience, tone
+- A name (or first name only, or initials — your choice) — a label, not a person
+- A description: tone and what you want from the tool
 - Clinical specializations (matched to your concerns)
 - A communication style
 - A therapeutic approach (default: ACT + IFS)
+- Optional: the modality your human therapist uses, if you have one
 
 The result is a persona file that becomes the system prompt for all sessions.
 You can edit it later via Settings, or redo the onboarding at any time.
@@ -34,33 +35,20 @@ You can edit it later via Settings, or redo the onboarding at any time.
 Research on therapist matching identifies these evidence-based factors. The
 onboarding wizard covers each one. This guide explains the reasoning.
 
-### 1. Identity Matching
+### 1. The Tool Is Not a Person
 
-Studies consistently show that clients benefit when they feel their therapist
-understands their cultural or experiential context — not necessarily shares it,
-but genuinely *gets* it.
+Stillpoint deliberately does **not** give the persona a human identity. It has
+no age, no biography, no gender, no cultural background, and no lived
+experience. It is an AI-assisted tool that augments human therapy and your own
+reflection between sessions — not a substitute for a relationship with a person.
 
-Consider:
+This is a change from an earlier design that let you "match" the persona's
+gender, age, and cultural background to your own. We removed that: giving the
+tool a human identity it doesn't have misrepresents what it is, and the
+therapeutic value comes from the work, not from pretending the tool is someone.
 
-- **Gender**: Do you want a therapist of the same gender, a different gender,
-  or does it not matter? There's no right answer. Some people find same-gender
-  therapists easier to open up to; others prefer cross-gender. Some topics feel
-  different depending on this dynamic.
-
-- **Cultural background**: Do you want someone from a shared cultural context?
-  This is especially relevant if culture, immigration, or ethnic identity is
-  part of what brings you to self-work.
-
-- **Age proximity**: A therapist described as roughly your age feels like a
-  peer. An older figure feels like a mentor. A younger figure might feel
-  easier to contradict. Which dynamic serves you best?
-
-- **Life experience overlap**: Recovery, parenthood, being an expat, LGBTQ+
-  experience, neurodivergence — if any of these are central to your work, you
-  may want a therapist who explicitly "gets it" from lived experience.
-
-You don't have to specify all of these. Unspecified dimensions default to
-neutral (the persona won't mention them).
+The name you choose is a plain label so the tool is easy to address — nothing
+more.
 
 ### 2. Communication Style
 
@@ -110,6 +98,11 @@ build on that, you can request:
 
 Specifying an approach affects how the therapist frames problems and which
 sources get prioritized in your notebooks.
+
+**If you are also seeing a human therapist**, the wizard asks which modality
+they use (ACT, DBT, CBT, psychodynamic, somatic, or other/mixed). This is
+optional, but recording it lets the tool keep its framing coherent with your
+therapy room so the two don't pull in different directions.
 
 ### 5. Therapeutic Alliance Feel
 

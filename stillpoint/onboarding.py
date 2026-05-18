@@ -109,32 +109,6 @@ def get_phase_questions(phase: str) -> list[dict]:
                 "required": True,
             },
             {
-                "id": "gender_preference",
-                "type": "choice",
-                "question": "Do you have a preference for the therapist's gender presentation?",
-                "choices": [
-                    "No preference",
-                    "Same gender as me",
-                    "Different gender from me",
-                    "Prefer masculine presentation",
-                    "Prefer feminine presentation",
-                    "Prefer neutral/non-binary presentation",
-                ],
-                "required": False,
-            },
-            {
-                "id": "age_preference",
-                "type": "choice",
-                "question": "Do you have an age preference for the therapist?",
-                "choices": [
-                    "No preference",
-                    "Similar age to me",
-                    "Older mentor figure",
-                    "Younger peer energy",
-                ],
-                "required": False,
-            },
-            {
                 "id": "directness",
                 "type": "choice",
                 "question": (
@@ -193,6 +167,26 @@ def get_phase_questions(phase: str) -> list[dict]:
                     "Identity & Life Transitions",
                 ],
                 "required": True,
+            },
+            {
+                "id": "human_therapist_modality",
+                "type": "choice",
+                "question": (
+                    "Are you also working with a human therapist? If so, what approach "
+                    "do they use?\n\n"
+                    "This helps the tool keep its framing coherent with your therapy room. "
+                    "Choose 'Not in human therapy' if this doesn't apply."
+                ),
+                "choices": [
+                    "ACT",
+                    "DBT",
+                    "CBT",
+                    "Psychodynamic",
+                    "Somatic",
+                    "Other / Mixed",
+                    "Not in human therapy",
+                ],
+                "required": False,
             },
             {
                 "id": "description",

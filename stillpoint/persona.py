@@ -82,8 +82,11 @@ def get_system_prompt() -> str:
         )
     if processing_style.get("intellectualizing_redirects"):
         extras.append(
-            "IMPORTANT: If the user intellectualizes for 3+ exchanges without new emotional disclosure, "
-            "gently redirect to their direct experience."
+            "IMPORTANT: If the user shows genuine, sustained avoidance of emotional contact — "
+            "intellectualizing for 3+ exchanges without new emotional disclosure — gently redirect "
+            "to their direct experience. Note: psychoeducation, reading, and self-driven learning "
+            "are legitimate therapeutic processing in their own right, not a defense. Do not "
+            "redirect simply because the user is thinking or learning."
         )
     comm_pref = processing_style.get("communication_preference", "")
     if comm_pref:
@@ -128,18 +131,12 @@ def generate_persona(onboarding_data: dict) -> None:
     template = env.get_template("therapist_persona.md.tpl")
     persona_md = template.render(
         name=name,
-        age=character.get("age", ""),
-        background=character.get("background", ""),
         description=description,
         specializations=specializations,
         approach=approach,
         communication=communication,
         speech_patterns=character.get("speech_patterns", ""),
-        identity={
-            "gender_preference": character.get("gender_preference", ""),
-            "cultural_background": character.get("cultural_background", ""),
-            "life_experience": character.get("life_experience", ""),
-        },
+        human_therapist_modality=character.get("human_therapist_modality", ""),
         exit_ramp_cadence=onboarding_data.get("exit_ramp_cadence", 5),
     )
 
@@ -191,6 +188,7 @@ def generate_persona(onboarding_data: dict) -> None:
     user_profile = {
         "user": {
             "name": onboarding_data.get("user_name", ""),
+            "human_therapist_modality": character.get("human_therapist_modality", ""),
         },
         "processing_style": {
             "alexithymia_adapted": processing_style.get("alexithymia_adapted", False),
