@@ -47,13 +47,5 @@ stuff/
 # Playwright
 .playwright-mcp/
 
-# Swarm / agent runtime artifacts
-.claude-flow/
+# Claude Code config dir
 .claude/
-agentdb.rvf
-agentdb.rvf.lock
-claude-flow.config.json
-ruvector.db
-node_modules/
-package-lock.json
-package.json
