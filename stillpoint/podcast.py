@@ -11,9 +11,11 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from stillpoint.config import get_project_root, load_config
+from stillpoint.config import get_project_root, load_config, save_config
 
 logger = logging.getLogger(__name__)
+
+_REGISTRY_FILE = "podcast_registry.yaml"
 
 
 def _get_podcasts_dir() -> Path:
@@ -21,6 +23,40 @@ def _get_podcasts_dir() -> Path:
     podcasts_dir = get_project_root() / "podcasts"
     podcasts_dir.mkdir(parents=True, exist_ok=True)
     return podcasts_dir
+
+
+def _load_registry() -> dict:
+    """Return the podcast registry, or an empty one if it does not exist."""
+    try:
+        data = load_config(_REGISTRY_FILE)
+    except FileNotFoundError:
+        return {"podcasts": []}
+    if not isinstance(data, dict):
+        return {"podcasts": []}
+    data.setdefault("podcasts", [])
+    return data
+
+
+def _record_podcast(
+    audio_path: str,
+    topic: str | None,
+    method: str,
+    impetus: str,
+    intended_takeaways: str,
+) -> None:
+    """Append a generated podcast to the registry with its impetus/takeaways."""
+    registry = _load_registry()
+    registry["podcasts"].append({
+        "filename": Path(audio_path).name,
+        "path": audio_path,
+        "topic": topic or "",
+        "method": method,
+        "impetus": impetus,
+        "intended_takeaways": intended_takeaways,
+        "size_bytes": Path(audio_path).stat().st_size if Path(audio_path).exists() else 0,
+        "created_at": datetime.now().isoformat(),
+    })
+    save_config(_REGISTRY_FILE, registry)
 
 
 def _get_notebooks() -> list[dict]:
@@ -133,12 +169,21 @@ def _generate_local_podcast(topic: str | None, output_dir: Path) -> str:
     )
 
 
-def generate_podcast(topic: str | None = None, method: str = "notebooklm") -> str:
+def generate_podcast(
+    topic: str | None = None,
+    method: str = "notebooklm",
+    impetus: str = "",
+    intended_takeaways: str = "",
+) -> str:
     """Generate a therapy podcast episode.
 
     Args:
         topic: Topic to generate about. If None, uses the first configured notebook.
         method: "notebooklm" (Audio Overview via CLI) or "local" (podcastfy/pyttsx3/gtts).
+        impetus: Why this episode is being generated (what prompted it). Recorded
+            in the podcast registry.
+        intended_takeaways: What the user should come away with. Recorded in the
+            podcast registry.
 
     Returns:
         Absolute path to the generated audio file.
@@ -149,7 +194,9 @@ def generate_podcast(topic: str | None = None, method: str = "notebooklm") -> st
                       or no TTS engine is installed for the "local" method.
     """
     if method == "local":
-        return _generate_local_podcast(topic, _get_podcasts_dir())
+        audio_path = _generate_local_podcast(topic, _get_podcasts_dir())
+        _record_podcast(audio_path, topic, method, impetus, intended_takeaways)
+        return audio_path
     if method != "notebooklm":
         raise ValueError(f"Unknown method: {method!r}. Use 'notebooklm' or 'local'.")
 
@@ -215,24 +262,49 @@ def generate_podcast(topic: str | None = None, method: str = "notebooklm") -> st
         raise RuntimeError(f"notebooklm download audio failed: {dl_result.stderr.strip()}")
 
     logger.info("Podcast saved to %s", output_path)
+    _record_podcast(str(output_path), topic, method, impetus, intended_takeaways)
     return str(output_path)
 
 
 def list_generated_podcasts() -> list[dict]:
-    """Return metadata for all generated podcasts in the podcasts/ directory.
+    """Return metadata for all generated podcasts.
+
+    The podcast registry is the primary source — its entries carry the
+    `impetus` and `intended_takeaways` recorded at generation time. Audio
+    files on disk that predate the registry (legacy files) are picked up by
+    a filesystem scan and returned with empty registry fields.
 
     Returns:
-        List of dicts with keys: filename, path, size_bytes, created_at (ISO 8601).
-        Sorted newest-first.
+        List of dicts with keys: filename, path, topic, method, impetus,
+        intended_takeaways, size_bytes, created_at (ISO 8601).
+        Sorted newest-first by created_at.
     """
+    registry = _load_registry()
+    entries: list[dict] = []
+    seen: set[str] = set()
+    for entry in registry.get("podcasts", []):
+        filename = entry.get("filename")
+        if filename:
+            seen.add(filename)
+        entries.append(entry)
+
+    # Filesystem fallback: legacy files generated before the registry existed.
     podcasts_dir = _get_podcasts_dir()
-    entries = []
-    for mp3 in sorted(podcasts_dir.glob("*.mp3"), key=lambda p: p.stat().st_mtime, reverse=True):
-        stat = mp3.stat()
+    for audio in podcasts_dir.glob("*.mp3"):
+        if audio.name in seen:
+            continue
+        stat = audio.stat()
         entries.append({
-            "filename": mp3.name,
-            "path": str(mp3),
+            "filename": audio.name,
+            "path": str(audio),
+            "topic": "",
+            "method": "",
+            "impetus": "",
+            "intended_takeaways": "",
             "size_bytes": stat.st_size,
             "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            "legacy": True,
         })
+
+    entries.sort(key=lambda e: e.get("created_at", ""), reverse=True)
     return entries

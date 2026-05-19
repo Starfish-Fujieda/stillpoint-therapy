@@ -75,13 +75,15 @@ def build_chat_view():
         count = result.get("session_count", 0)
 
         info_text = f"Session #{count + 1}"
-        if result.get("meta_question_due"):
+        if result.get("meta_question_overdue"):
+            info_text += " • Meta-question OVERDUE — asked before clinical work"
+        elif result.get("meta_question_due"):
             info_text += " • Meta-question due this session"
 
         return (
             [(None, opening)],
             info_text,
-            _get_status_text(),
+            _format_usage_status(result.get("usage_signals", {}), active=True),
             "",
         )
 
@@ -152,6 +154,30 @@ def build_chat_view():
     return start_new_session, [chatbot, session_info, status_display, msg_input]
 
 
+def _format_usage_status(usage: dict, active: bool) -> str:
+    """Render the usage-signals status line shown in the chat header.
+
+    Surfaces the user's own learning trajectory: sessions completed,
+    contacts in the last week, trigger-time contacts, and the
+    meta-question (exit-ramp) status.
+    """
+    sessions = usage.get("sessions_completed", 0)
+    contacts = usage.get("contacts_last_week", 0)
+    triggers = usage.get("trigger_time_contacts", 0)
+    meta = usage.get("meta_question_status", "")
+
+    parts = [
+        "🟢 Session active" if active else "⚪",
+        f"{sessions} session{'s' if sessions != 1 else ''} completed",
+        f"{contacts} contact{'s' if contacts != 1 else ''} this week",
+    ]
+    if triggers:
+        parts.append(f"{triggers} at trigger-time")
+    if meta:
+        parts.append(f"meta-question: {meta}")
+    return " • ".join(parts)
+
+
 def _get_status_text() -> str:
     """Get the current status display text."""
     try:
@@ -160,6 +186,9 @@ def _get_status_text() -> str:
         active = engine.session_active if engine else False
 
         if active:
+            usage = engine.session_context.get("usage_signals", {})
+            if usage:
+                return _format_usage_status(usage, active=True)
             return "🟢 Session active"
         elif count > 0:
             return f"⚪ {count} session{'s' if count != 1 else ''} completed"

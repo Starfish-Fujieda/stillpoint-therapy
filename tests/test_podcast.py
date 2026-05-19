@@ -10,6 +10,8 @@ import yaml
 import stillpoint.podcast as podcast
 from stillpoint.podcast import (
     _get_notebooks,
+    _load_registry,
+    _record_podcast,
     _select_notebook,
     generate_podcast,
     list_generated_podcasts,
@@ -92,6 +94,76 @@ def test_list_generated_podcasts_sorted_newest_first(project_root):
     # sorted newest-first means the one created most recently is index 0
     filenames = [r["filename"] for r in results]
     assert "new.mp3" in filenames
+
+
+# --- podcast registry: impetus + intended_takeaways --------------------------
+
+def test_record_podcast_writes_registry(project_root):
+    podcasts_dir = project_root / "podcasts"
+    podcasts_dir.mkdir()
+    mp3 = podcasts_dir / "ep1.mp3"
+    mp3.write_bytes(b"\x00" * 50)
+
+    _record_podcast(
+        str(mp3), "anxiety_ocd", "notebooklm",
+        impetus="rising anxiety this week",
+        intended_takeaways="normalize anxiety; urge-surfing",
+    )
+
+    registry = _load_registry()
+    assert len(registry["podcasts"]) == 1
+    entry = registry["podcasts"][0]
+    assert entry["filename"] == "ep1.mp3"
+    assert entry["topic"] == "anxiety_ocd"
+    assert entry["impetus"] == "rising anxiety this week"
+    assert entry["intended_takeaways"] == "normalize anxiety; urge-surfing"
+
+
+def test_record_podcast_appends_to_registry(project_root):
+    podcasts_dir = project_root / "podcasts"
+    podcasts_dir.mkdir()
+    for name in ("a.mp3", "b.mp3"):
+        path = podcasts_dir / name
+        path.write_bytes(b"\x00" * 10)
+        _record_podcast(str(path), "topic", "local", "impetus", "takeaway")
+
+    assert len(_load_registry()["podcasts"]) == 2
+
+
+def test_list_generated_podcasts_reads_registry(project_root):
+    podcasts_dir = project_root / "podcasts"
+    podcasts_dir.mkdir()
+    mp3 = podcasts_dir / "registered.mp3"
+    mp3.write_bytes(b"\x00" * 30)
+    _record_podcast(
+        str(mp3), "anxiety_ocd", "notebooklm",
+        impetus="why-it", intended_takeaways="takeaway-it",
+    )
+
+    results = list_generated_podcasts()
+    assert len(results) == 1
+    assert results[0]["impetus"] == "why-it"
+    assert results[0]["intended_takeaways"] == "takeaway-it"
+    assert results[0].get("legacy") is not True
+
+
+def test_list_generated_podcasts_mixes_registry_and_legacy(project_root):
+    podcasts_dir = project_root / "podcasts"
+    podcasts_dir.mkdir()
+
+    registered = podcasts_dir / "registered.mp3"
+    registered.write_bytes(b"\x00" * 30)
+    _record_podcast(str(registered), "topic", "local", "imp", "take")
+
+    legacy = podcasts_dir / "legacy.mp3"
+    legacy.write_bytes(b"\x00" * 40)
+
+    results = list_generated_podcasts()
+    assert {r["filename"] for r in results} == {"registered.mp3", "legacy.mp3"}
+
+    legacy_entry = next(r for r in results if r["filename"] == "legacy.mp3")
+    assert legacy_entry["impetus"] == ""
+    assert legacy_entry.get("legacy") is True
 
 
 # --- generate_podcast — method validation ------------------------------------

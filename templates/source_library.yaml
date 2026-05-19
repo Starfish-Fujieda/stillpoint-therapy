@@ -52,6 +52,49 @@ topics:
         author: "Brené Brown"
         type: book
         why: "Vulnerability and shame resilience in everyday life"
+      # Evolutionary-functional view of shame: shame is not a defect but an
+      # adaptive signal. Framing it this way reduces meta-shame (shame about
+      # feeling shame) and supports self-compassion.
+      - title: "Shame and Pride: Affect, Sex, and the Birth of the Self"
+        author: "Donald Nathanson"
+        type: book
+        why: "Maps shame as a built-in affect with a protective function, not a flaw"
+      - title: "Shame: The Exposed Self"
+        author: "Michael Lewis"
+        type: book
+        why: "Developmental and functional account of shame as a self-conscious emotion"
+      - title: "The Compassionate Mind"
+        author: "Paul Gilbert"
+        type: book
+        why: "Evolutionary model of shame and the compassion system that regulates it"
+      - title: "The Psychology of Shame"
+        author: "Gershen Kaufman"
+        type: book
+        why: "Theory and treatment of shame grounded in affect and interpersonal bonds"
+      - title: "Healing the Shame That Binds You"
+        author: "John Bradshaw"
+        type: book
+        why: "Distinguishes healthy, signalling shame from toxic, identity-bound shame"
+      - title: "Your Shame Guide"
+        author: "SOLVED"
+        type: guide
+        why: "Practical guide framing shame as a workable signal rather than a verdict"
+      - title: "Landers & Sznycer (2022)"
+        author: "Miriam Landers & Daniel Sznycer"
+        type: article
+        why: "Argues shame functions to protect against the costs of social devaluation"
+      - title: "Robertson et al. (2018)"
+        author: "Robertson et al."
+        type: article
+        why: "Empirical work on shame's social-regulatory, fitness-relevant function"
+      - title: "Gilbert (2003)"
+        author: "Paul Gilbert"
+        type: article
+        why: "Evolution and social-rank theory of shame; distinguishes shame from guilt"
+      - title: "Leary (2007)"
+        author: "Mark Leary"
+        type: article
+        why: "Sociometer theory — self-conscious emotions track social acceptance"
 
   cptsd_trauma:
     display_name: "CPTSD & Trauma"

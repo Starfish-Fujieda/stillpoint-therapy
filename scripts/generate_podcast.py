@@ -6,7 +6,7 @@ the import resolves at runtime after merge. A clear error is shown if missing.
 
 Usage:
     python scripts/generate_podcast.py [--topic TOPIC] [--method METHOD] \\
-                                       [--output-dir PATH]
+                                       [--impetus TEXT] [--intended-takeaways TEXT]
 
 Methods:
     notebooklm  Use NotebookLM Audio Overview (requires notebooklm CLI auth).
@@ -16,13 +16,13 @@ Examples:
     python scripts/generate_podcast.py
     python scripts/generate_podcast.py --topic anxiety_ocd
     python scripts/generate_podcast.py --topic cptsd_trauma --method notebooklm
-    python scripts/generate_podcast.py --method local --output-dir /tmp/podcasts
+    python scripts/generate_podcast.py --topic anxiety_ocd \\
+        --impetus "user reported rising anxiety this week" \\
+        --intended-takeaways "normalize anxiety; introduce urge-surfing"
 """
 
 import argparse
 import sys
-from pathlib import Path
-
 
 IMPORT_ERROR_MSG = """
 Error: stillpoint.podcast is not yet available.
@@ -35,7 +35,8 @@ resolve after the branches are merged. In the meantime you can:
 
 Required function signature:
     from stillpoint.podcast import generate_podcast
-    generate_podcast(topic=None, method="notebooklm", output_dir=None) -> str
+    generate_podcast(topic=None, method="notebooklm",
+                     impetus="", intended_takeaways="") -> str
 """
 
 VALID_METHODS = ["notebooklm", "local"]
@@ -69,10 +70,22 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--output-dir",
-        metavar="PATH",
-        type=Path,
-        help="Directory for the generated audio file (default: podcasts/).",
+        "--impetus",
+        metavar="TEXT",
+        default="",
+        help=(
+            "Why this episode is being generated — what prompted it. "
+            "Recorded in config/podcast_registry.yaml."
+        ),
+    )
+    parser.add_argument(
+        "--intended-takeaways",
+        metavar="TEXT",
+        default="",
+        help=(
+            "What the user should come away with from this episode. "
+            "Recorded in config/podcast_registry.yaml."
+        ),
     )
     return parser.parse_args()
 
@@ -87,17 +100,20 @@ if __name__ == "__main__":
         sys.exit(1)
 
     topic_label = args.topic or "(auto-selected)"
-    print(f"Generating podcast...")
+    print("Generating podcast...")
     print(f"  Topic:  {topic_label}")
     print(f"  Method: {args.method}")
-    if args.output_dir:
-        print(f"  Output: {args.output_dir}")
+    if args.impetus:
+        print(f"  Impetus: {args.impetus}")
+    if args.intended_takeaways:
+        print(f"  Intended takeaways: {args.intended_takeaways}")
 
     try:
         audio_path = generate_podcast(
             topic=args.topic,
             method=args.method,
-            output_dir=args.output_dir,
+            impetus=args.impetus,
+            intended_takeaways=args.intended_takeaways,
         )
     except Exception as e:
         print(f"Error generating podcast: {e}", file=sys.stderr)

@@ -3,6 +3,8 @@ config/therapist.yaml
 config/treatment_plan.yaml
 config/user_profile.yaml
 config/podcast.yaml
+config/podcast_registry.yaml
+config/report_log.yaml
 personas/therapist.md
 personas/therapist.json
 
@@ -33,6 +35,13 @@ env/
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+
+# Vector / memory store artifacts
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+.claude/memory.db
 
 # Environment variables
 .env

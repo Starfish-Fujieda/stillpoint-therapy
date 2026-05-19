@@ -8,6 +8,7 @@ import yaml
 
 import stillpoint.report as report
 from stillpoint.report import (
+    _INTERPRETATION_SECTIONS,
     _REPORT_SECTIONS,
     _SECTION_HEADINGS,
     _assemble_report,
@@ -31,11 +32,26 @@ def _redirect_report(project_root, monkeypatch):
 # --- Constants ----------------------------------------------------------------
 
 def test_report_sections_count():
-    assert len(_REPORT_SECTIONS) == 9
+    # Therapist-facing report: raw sections only (interpretive sections moved
+    # to the interpretation log).
+    assert len(_REPORT_SECTIONS) == 7
+
+
+def test_report_excludes_interpretive_sections():
+    assert "emotional_trajectory" not in _REPORT_SECTIONS
+    assert "patterns_observed" not in _REPORT_SECTIONS
+
+
+def test_report_leads_with_safety():
+    assert _REPORT_SECTIONS[0] == "red_flags"
 
 
 def test_section_headings_match_sections():
-    assert set(_SECTION_HEADINGS.keys()) == set(_REPORT_SECTIONS)
+    # Every report and interpretation section has a heading, and the headings
+    # map covers exactly the union of the two section sets.
+    assert set(_REPORT_SECTIONS) <= set(_SECTION_HEADINGS)
+    assert set(_INTERPRETATION_SECTIONS) <= set(_SECTION_HEADINGS)
+    assert set(_SECTION_HEADINGS) == set(_REPORT_SECTIONS) | set(_INTERPRETATION_SECTIONS)
 
 
 # --- Timestamp persistence ---------------------------------------------------
@@ -105,16 +121,32 @@ def test_build_analysis_prompt_unknown_section_uses_fallback():
 def test_assemble_report_contains_frontmatter():
     sections = {"themes_covered": "Anxiety, sleep", "red_flags": "None identified."}
     enabled = ["themes_covered", "red_flags"]
-    result = _assemble_report(sections, 2, ("2024-01-01", "2024-01-15"), enabled)
+    result = _assemble_report(
+        sections, 2, ("2024-01-01", "2024-01-15"), enabled, tool_name="Dr. Test"
+    )
     assert result.startswith("---")
     assert "report_date:" in result
     assert "session_count: 2" in result
 
 
+def test_assemble_report_has_provenance_header():
+    result = _assemble_report(
+        {"red_flags": "None identified."},
+        1,
+        ("2024-01-01", "2024-01-01"),
+        ["red_flags"],
+        tool_name="Dr. Test",
+    )
+    assert "Provenance" in result
+    assert "Dr. Test" in result
+
+
 def test_assemble_report_includes_enabled_sections():
     sections = {k: f"Content for {k}" for k in _REPORT_SECTIONS}
     enabled = ["themes_covered", "goal_progress"]
-    result = _assemble_report(sections, 1, ("2024-01-01", "2024-01-01"), enabled)
+    result = _assemble_report(
+        sections, 1, ("2024-01-01", "2024-01-01"), enabled, tool_name="Dr. Test"
+    )
     assert "Themes Covered" in result
     assert "Goal Progress" in result
     assert "Red Flags" not in result
@@ -123,14 +155,18 @@ def test_assemble_report_includes_enabled_sections():
 def test_assemble_report_excludes_disabled_sections():
     sections = {k: f"Content for {k}" for k in _REPORT_SECTIONS}
     enabled = ["red_flags"]
-    result = _assemble_report(sections, 1, ("2024-01-01", "2024-01-01"), enabled)
+    result = _assemble_report(
+        sections, 1, ("2024-01-01", "2024-01-01"), enabled, tool_name="Dr. Test"
+    )
     assert "Themes Covered" not in result
     assert "Red Flags" in result
 
 
 def test_assemble_report_contains_footer():
     sections = {"themes_covered": "Some themes."}
-    result = _assemble_report(sections, 1, ("2024-01-01", "2024-01-01"), ["themes_covered"])
+    result = _assemble_report(
+        sections, 1, ("2024-01-01", "2024-01-01"), ["themes_covered"], tool_name="Dr. Test"
+    )
     assert "generated locally by Stillpoint" in result
     assert "has not been transmitted" in result
 
@@ -167,3 +203,43 @@ def test_generate_session_report_respects_enabled_sections(
     )
     assert "Themes Covered" in result
     assert "Red Flags" not in result
+
+
+# --- generate_interpretation_log (LLM mocked) --------------------------------
+
+def test_generate_interpretation_log_empty_store_raises(project_root, monkeypatch):
+    monkeypatch.setattr(report, "send_message", lambda *a, **kw: "mocked")
+    with pytest.raises(ValueError, match="No sessions found"):
+        report.generate_interpretation_log(save_to_disk=False)
+
+
+def test_generate_interpretation_log_with_sessions(
+    project_root, session_store, monkeypatch
+):
+    monkeypatch.setattr(report, "send_message", lambda *a, **kw: "Interpretive content.")
+    result = report.generate_interpretation_log(save_to_disk=False)
+    assert "Interpretation Log" in result
+    assert "Not for your therapist" in result
+    assert "Emotional Trajectory" in result
+    assert "Patterns Observed" in result
+    assert "Interpretive content." in result
+
+
+def test_generate_interpretation_log_saves_to_disk(
+    project_root, session_store, monkeypatch
+):
+    monkeypatch.setattr(report, "send_message", lambda *a, **kw: "content")
+    report.generate_interpretation_log(save_to_disk=True)
+    reports_dir = project_root / "reports"
+    logs = list(reports_dir.glob("interpretation_log_*.md"))
+    assert len(logs) == 1
+
+
+def test_generate_interpretation_log_does_not_advance_report_timestamp(
+    project_root, session_store, monkeypatch
+):
+    # The interpretation log must not consume the report window — only
+    # generate_session_report advances the last-report timestamp.
+    monkeypatch.setattr(report, "send_message", lambda *a, **kw: "content")
+    report.generate_interpretation_log(save_to_disk=True)
+    assert _load_last_report_timestamp() is None

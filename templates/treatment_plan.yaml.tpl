@@ -29,4 +29,8 @@ exit_ramp:
   meta_question_cadence: {{ exit_ramp_cadence | default(5) }}
   last_meta_question_session: null
 
+usage_signals:
+  trigger_time_contacts: 0   # contacts initiated at an urge/trigger moment
+  meta_question_status: ""   # maintained at session end
+
 session_log: []
