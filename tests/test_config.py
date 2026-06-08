@@ -5,6 +5,7 @@ import yaml
 
 from stillpoint.config import (
     get_config_dir,
+    get_notebook_count,
     get_project_root,
     is_configured,
     load_config,
@@ -52,6 +53,53 @@ def test_is_configured_true_when_all_files_present(project_root):
 def test_is_configured_false_when_only_some_files_present(project_root):
     save_config("therapist.yaml", {})
     assert is_configured() is False
+
+
+# ---------------------------------------------------------------------------
+# get_notebook_count
+# ---------------------------------------------------------------------------
+
+def test_get_notebook_count_zero_when_no_config(project_root):
+    """No therapist.yaml present → 0 notebooks."""
+    assert get_notebook_count() == 0
+
+
+def test_get_notebook_count_zero_when_no_notebooks_key(project_root):
+    """therapist.yaml exists but has no 'notebooks' key → 0."""
+    save_config("therapist.yaml", {"therapist": {"name": "Dr. Test"}})
+    assert get_notebook_count() == 0
+
+
+def test_get_notebook_count_zero_when_all_notebook_ids_blank(project_root):
+    """Notebooks present but all notebook_id fields are empty → 0."""
+    save_config("therapist.yaml", {
+        "therapist": {
+            "name": "Dr. Test",
+            "notebooks": [
+                {"topic": "Anxiety", "notebook_id": "", "when_to_query": "anxiety"},
+                {"topic": "Depression", "notebook_id": "   ", "when_to_query": "depression"},
+            ],
+        }
+    })
+    assert get_notebook_count() == 0
+
+
+def test_get_notebook_count_counts_configured(therapist_config):
+    """The therapist_config fixture has 2 configured notebooks → 2."""
+    assert get_notebook_count() == 2
+
+
+def test_get_notebook_count_mixed_blank_and_configured(project_root):
+    """Mixed list (one blank ID, one configured) → 1."""
+    save_config("therapist.yaml", {
+        "therapist": {
+            "notebooks": [
+                {"topic": "Anxiety", "notebook_id": "nb-anxiety-123"},
+                {"topic": "Depression", "notebook_id": ""},
+            ],
+        }
+    })
+    assert get_notebook_count() == 1
 
 
 def test_load_source_library(project_root, source_library):

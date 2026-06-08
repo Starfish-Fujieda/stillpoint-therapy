@@ -217,7 +217,7 @@ Tasks 3-5 (foundation) → Tasks 6-8 (templates) → Tasks 9-13 (core library) �
 
 - [x] Create CLI podcast generator
 - **Files**: `scripts/generate_podcast.py`
-- **Note**: Calls `stillpoint.podcast.generate_podcast()`. Handles `ImportError` gracefully. Supports `--topic`, `--method` (notebooklm|local), `--output-dir`.
+- **Note**: Calls `stillpoint.podcast.generate_podcast()`. Handles `ImportError` gracefully. Supports `--topic`, `--method` (notebooklm|local), `--fallback-to-local`, `--impetus`, `--intended-takeaways`. Interactive prompt when NotebookLM fails in a terminal.
 
 ### Task 26 — `scripts/podcast_gap_analyzer.py` ✅
 

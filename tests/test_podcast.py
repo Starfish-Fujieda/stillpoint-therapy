@@ -203,3 +203,51 @@ def test_generate_podcast_missing_notebook_id_raises(project_root, monkeypatch):
     monkeypatch.setattr(podcast.shutil, "which", lambda _: "/usr/bin/notebooklm")
     with pytest.raises(RuntimeError, match="notebook_id"):
         generate_podcast(topic="anxiety")
+
+
+# --- generate_podcast — fallback_to_local ------------------------------------
+
+def test_generate_podcast_fallback_to_local_on_notebooklm_failure(project_root, therapist_config, monkeypatch):
+    """When notebooklm fails and fallback_to_local=True, it falls back to local."""
+    monkeypatch.setattr(podcast.shutil, "which", lambda _: "/usr/bin/notebooklm")
+    # Simulate notebooklm generate audio failing
+    monkeypatch.setattr(
+        podcast, "_run",
+        lambda _args, timeout=30: type("Result", (), {"returncode": 1, "stderr": "quota exceeded", "stdout": ""})()
+    )
+    # Mock local generation so we don't need TTS packages
+    fake_path = str(project_root / "podcasts" / "20240101_120000_test_local.mp3")
+    monkeypatch.setattr(podcast, "_generate_local_podcast", lambda topic, output_dir: fake_path)
+
+    result = generate_podcast(topic="anxiety", fallback_to_local=True)
+    assert result == fake_path
+
+    # Verify registry records the fallback as local method
+    registry = _load_registry()
+    assert len(registry["podcasts"]) == 1
+    assert registry["podcasts"][0]["method"] == "local"
+
+
+def test_generate_podcast_fallback_to_local_raises_when_local_also_fails(
+    project_root, therapist_config, monkeypatch
+):
+    """When notebooklm fails and local also fails, the original/local error is raised."""
+    monkeypatch.setattr(podcast.shutil, "which", lambda _: "/usr/bin/notebooklm")
+    monkeypatch.setattr(
+        podcast, "_run",
+        lambda _args, timeout=30: type("Result", (), {"returncode": 1, "stderr": "quota exceeded", "stdout": ""})()
+    )
+    # Let _generate_local_podcast fail naturally (no TTS packages)
+    with pytest.raises(RuntimeError, match="No TTS engine available"):
+        generate_podcast(topic="anxiety", fallback_to_local=True)
+
+
+def test_generate_podcast_no_fallback_when_disabled(project_root, therapist_config, monkeypatch):
+    """When notebooklm fails and fallback_to_local=False (default), error propagates."""
+    monkeypatch.setattr(podcast.shutil, "which", lambda _: "/usr/bin/notebooklm")
+    monkeypatch.setattr(
+        podcast, "_run",
+        lambda _args, timeout=30: type("Result", (), {"returncode": 1, "stderr": "quota exceeded", "stdout": ""})()
+    )
+    with pytest.raises(RuntimeError, match="notebooklm generate audio failed"):
+        generate_podcast(topic="anxiety", fallback_to_local=False)

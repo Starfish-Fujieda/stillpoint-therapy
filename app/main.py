@@ -22,8 +22,37 @@ def build_app() -> gr.Blocks:
     with gr.Blocks(title="Stillpoint") as app:
         # Two mutually-exclusive containers
         with gr.Column(visible=not configured, elem_id="onboarding_col") as onboarding_col:
+            # --- Quick Start panel (Fix 3, PR 2) ---
+            # Above the wizard so a user with an API key can skip
+            # the 15-20 minute onboarding and start chatting in
+            # ~1 minute. The user can still customize in Settings
+            # later. Below the wizard is also visible (the user
+            # can choose either path).
+            with gr.Column(elem_id="quick_start_col"):
+                gr.Markdown("## ⚡ Quick Start")
+                gr.Markdown(
+                    "Already have an Anthropic API key? Paste it below "
+                    "and start chatting in seconds. You can customize the "
+                    "therapist, configure NotebookLM, and adjust every "
+                    "preference in **Settings** after your first session."
+                )
+                api_key_input = gr.Textbox(
+                    label="Anthropic API Key",
+                    placeholder="sk-ant-... (leave blank to skip and use the wizard below)",
+                    type="password",
+                    interactive=True,
+                )
+                quick_start_btn = gr.Button(
+                    "⚡ Quick Start", variant="primary", size="lg"
+                )
+                gr.Markdown(
+                    "---\n\n"
+                    "*Or set up the full therapist step by step ↓*"
+                )
+
+            # --- Onboarding wizard (4 phases after PR 2 Fix 4) ---
             from app.onboarding_wizard import build_onboarding_view
-            onboarding_done = build_onboarding_view()
+            done_btn, setup_later_btn = build_onboarding_view()
 
         with gr.Column(visible=configured, elem_id="main_col") as main_col:
             with gr.Tabs():
@@ -37,12 +66,42 @@ def build_app() -> gr.Blocks:
                 from app.settings import create_settings_tab
                 create_settings_tab()
 
-        # When onboarding finishes, switch views
+        # --- Event handlers ---
         def finish_onboarding():
-            """Switch from onboarding to main tabbed view."""
+            """Switch from onboarding to main tabbed view (used by
+            both the wizard's completion buttons and Quick Start)."""
             return gr.update(visible=False), gr.update(visible=True)
 
-        onboarding_done.click(
+        def on_quick_start(api_key: str):
+            """Handle Quick Start: build state, persist config, switch views."""
+            from stillpoint.onboarding import (
+                generate_all_config,
+                generate_quick_start_config,
+            )
+            state = generate_quick_start_config(api_key)
+            generate_all_config(state)
+            return gr.update(visible=False), gr.update(visible=True)
+
+        # Quick Start — uses the same view switch as the wizard's
+        # completion buttons. No banner here; the chat surface
+        # independently checks for a missing API key and shows one
+        # if needed.
+        quick_start_btn.click(
+            fn=on_quick_start,
+            inputs=[api_key_input],
+            outputs=[onboarding_col, main_col],
+        )
+
+        # Both wizard completion buttons trigger the same view
+        # switch. The "setup later" button is only shown when 0
+        # notebooks are configured (post-onboarding conditional
+        # message).
+        done_btn.click(
+            fn=finish_onboarding,
+            inputs=[],
+            outputs=[onboarding_col, main_col],
+        )
+        setup_later_btn.click(
             fn=finish_onboarding,
             inputs=[],
             outputs=[onboarding_col, main_col],

@@ -11,7 +11,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from stillpoint.config import get_project_root, load_config, save_config
+from stillpoint.config import get_notebooklm_bin, get_project_root, load_config, save_config
 
 logger = logging.getLogger(__name__)
 
@@ -88,12 +88,21 @@ def _select_notebook(topic: str | None) -> dict | None:
 
 
 def _notebooklm_bin() -> str:
-    """Return path to the notebooklm CLI, or raise if not found."""
+    """Return path to the notebooklm CLI, or raise if not found.
+
+    Resolution order:
+    1. ``STILLPOINT_NOTEBOOKLM_BIN`` environment variable
+    2. PATH
+    """
+    env_bin = get_notebooklm_bin()
+    if env_bin:
+        return env_bin
     binary = shutil.which("notebooklm")
     if binary is None:
         raise RuntimeError(
             "notebooklm CLI not found in PATH. "
-            "Run scripts/setup.sh to install it via pipx."
+            "Run scripts/setup.sh to install it via pipx, "
+            "or set STILLPOINT_NOTEBOOKLM_BIN to its full path."
         )
     return binary
 
@@ -174,6 +183,7 @@ def generate_podcast(
     method: str = "notebooklm",
     impetus: str = "",
     intended_takeaways: str = "",
+    fallback_to_local: bool = False,
 ) -> str:
     """Generate a therapy podcast episode.
 
@@ -184,6 +194,8 @@ def generate_podcast(
             in the podcast registry.
         intended_takeaways: What the user should come away with. Recorded in the
             podcast registry.
+        fallback_to_local: If True and the NotebookLM path fails, automatically
+            fall back to local TTS generation instead of raising an error.
 
     Returns:
         Absolute path to the generated audio file.
@@ -216,54 +228,65 @@ def generate_podcast(
     topic_label = topic or notebook.get("topic", "therapy")
     instructions = f"Focus on {topic_label}" if topic else ""
 
-    # Trigger generation — returns task_id immediately
-    gen_args = ["generate", "audio", "--notebook", notebook_id, "--json"]
-    if instructions:
-        gen_args.append(instructions)
-
-    result = _run(gen_args, timeout=60)
-    if result.returncode != 0:
-        raise RuntimeError(f"notebooklm generate audio failed: {result.stderr.strip()}")
-
     try:
-        gen_data = json.loads(result.stdout.strip())
-        artifact_id = gen_data.get("task_id") or gen_data.get("artifact_id", "")
-    except (json.JSONDecodeError, KeyError) as exc:
-        raise RuntimeError(
-            f"Unexpected output from notebooklm generate audio: {result.stdout!r}"
-        ) from exc
+        # Trigger generation — returns task_id immediately
+        gen_args = ["generate", "audio", "--notebook", notebook_id, "--json"]
+        if instructions:
+            gen_args.append(instructions)
 
-    # Wait for completion (audio takes 10-20 min; use a long timeout)
-    wait_result = _run(
-        ["artifact", "wait", artifact_id, "-n", notebook_id, "--timeout", "1200"],
-        timeout=1250,
-    )
-    if wait_result.returncode == 2:
-        raise RuntimeError(
-            f"Timed out waiting for audio artifact {artifact_id}. "
-            "Check status with: notebooklm artifact list"
+        result = _run(gen_args, timeout=60)
+        if result.returncode != 0:
+            raise RuntimeError(f"notebooklm generate audio failed: {result.stderr.strip()}")
+
+        try:
+            gen_data = json.loads(result.stdout.strip())
+            artifact_id = gen_data.get("task_id") or gen_data.get("artifact_id", "")
+        except (json.JSONDecodeError, KeyError) as exc:
+            raise RuntimeError(
+                f"Unexpected output from notebooklm generate audio: {result.stdout!r}"
+            ) from exc
+
+        # Wait for completion (audio takes 10-20 min; use a long timeout)
+        wait_result = _run(
+            ["artifact", "wait", artifact_id, "-n", notebook_id, "--timeout", "1200"],
+            timeout=1250,
         )
-    if wait_result.returncode != 0:
-        raise RuntimeError(
-            f"Error waiting for artifact: {wait_result.stderr.strip()}"
+        if wait_result.returncode == 2:
+            raise RuntimeError(
+                f"Timed out waiting for audio artifact {artifact_id}. "
+                "Check status with: notebooklm artifact list"
+            )
+        if wait_result.returncode != 0:
+            raise RuntimeError(
+                f"Error waiting for artifact: {wait_result.stderr.strip()}"
+            )
+
+        # Download to podcasts/
+        safe_label = "".join(c if c.isalnum() or c in "-_" else "_" for c in topic_label)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}_{safe_label}.mp3"
+        output_path = _get_podcasts_dir() / filename
+
+        dl_result = _run(
+            ["download", "audio", str(output_path), "-a", artifact_id, "-n", notebook_id],
+            timeout=120,
         )
+        if dl_result.returncode != 0:
+            raise RuntimeError(f"notebooklm download audio failed: {dl_result.stderr.strip()}")
 
-    # Download to podcasts/
-    safe_label = "".join(c if c.isalnum() or c in "-_" else "_" for c in topic_label)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{timestamp}_{safe_label}.mp3"
-    output_path = _get_podcasts_dir() / filename
+        logger.info("Podcast saved to %s", output_path)
+        _record_podcast(str(output_path), topic, method, impetus, intended_takeaways)
+        return str(output_path)
 
-    dl_result = _run(
-        ["download", "audio", str(output_path), "-a", artifact_id, "-n", notebook_id],
-        timeout=120,
-    )
-    if dl_result.returncode != 0:
-        raise RuntimeError(f"notebooklm download audio failed: {dl_result.stderr.strip()}")
-
-    logger.info("Podcast saved to %s", output_path)
-    _record_podcast(str(output_path), topic, method, impetus, intended_takeaways)
-    return str(output_path)
+    except RuntimeError as exc:
+        if fallback_to_local:
+            logger.warning(
+                "NotebookLM generation failed (%s). Falling back to local TTS.", exc
+            )
+            audio_path = _generate_local_podcast(topic, _get_podcasts_dir())
+            _record_podcast(audio_path, topic, "local", impetus, intended_takeaways)
+            return audio_path
+        raise
 
 
 def list_generated_podcasts() -> list[dict]:

@@ -5,10 +5,15 @@ Provides the main therapy chat UI with:
 - Text input for user messages
 - Session controls (start, end)
 - Session status display
+- Grounding status indicator (NotebookLM vs static KB vs none)
+- API key warning banner (when the configured env var is unset)
 """
+
+import os
 
 import gradio as gr
 
+from stillpoint import knowledge
 from stillpoint.config import load_config
 from stillpoint.memory import get_session_count
 from stillpoint.session import SessionEngine
@@ -26,12 +31,52 @@ def _get_engine() -> SessionEngine:
     return _session_engine
 
 
+def _api_key_status() -> str:
+    """Return an API key warning if the configured env var is unset.
+
+    Reads ``therapist.yaml`` to find the configured
+    ``llm.api_key_env`` (e.g., ``ANTHROPIC_API_KEY``), then checks
+    the environment. Returns the warning text if the env var is
+    missing or empty; returns an empty string if everything is OK.
+
+    Why this lives in chat (not in the wizard): Quick Start writes
+    the API key into the current process's env (see
+    ``generate_quick_start_config``), so this check is most useful
+    as a chat-startup sanity check, not an onboarding-time check.
+    """
+    try:
+        cfg = load_config("therapist.yaml")
+    except FileNotFoundError:
+        return ""
+    llm_cfg = cfg.get("llm", {})
+    api_key_env = llm_cfg.get("api_key_env", "")
+    if not api_key_env:
+        return ""
+    if os.environ.get(api_key_env, "").strip():
+        return ""
+    return (
+        f"⚠️ **API key required.** Set the environment variable "
+        f"`{api_key_env}` before sending a message, or LLM calls will "
+        f"fail. (See Settings → LLM Backend to confirm which env var "
+        f"name Stillpoint expects.)"
+    )
+
+
 def build_chat_view():
     """Build the chat interface view.
 
     Returns:
         Tuple of (on_load_fn, on_load_outputs) to wire app.load() in the caller.
     """
+    # --- API key warning banner (PR 2, Fix 3) ---
+    # Visible only when the configured env var is missing/empty.
+    # Helps the user understand why the first chat message might
+    # fail when they used Quick Start without a key.
+    api_key_warning = gr.Markdown(
+        value=_api_key_status(),
+        visible=bool(_api_key_status()),
+    )
+
     # --- Header ---
     with gr.Row():
         gr.Markdown("## 🧘 Stillpoint")
@@ -39,6 +84,15 @@ def build_chat_view():
             value=_get_status_text(),
             elem_id="session_status",
         )
+        # Grounding status: clickable accordion. Label shows the current
+        # state (emoji + state name); expanded view shows topics, notebook
+        # count, and a link to Settings.
+        grounding_status = gr.Accordion(
+            label=_get_grounding_label(),
+            open=False,
+        )
+        with grounding_status:
+            gr.Markdown(value=_get_grounding_details())
 
     # --- Chat area ---
     chatbot = gr.Chatbot(
@@ -196,3 +250,39 @@ def _get_status_text() -> str:
             return "⚪ Ready for first session"
     except Exception:
         return "⚪ Ready"
+
+
+def _get_grounding_label() -> str:
+    """Return the current grounding state as a short label for the accordion title."""
+    status = knowledge.get_grounding_status()
+    if status["notebook_count"] > 0:
+        return "🟢 Grounded"
+    if status["static_available"]:
+        return "🟡 Basic grounding"
+    return "🔴 Not grounded"
+
+
+def _get_grounding_details() -> str:
+    """Return the markdown body shown when the grounding accordion is expanded."""
+    status = knowledge.get_grounding_status()
+    static_topics = status["static_topics"]
+    notebook_count = status["notebook_count"]
+    total_notebooks = len(knowledge.get_available_notebooks())
+
+    lines: list[str] = ["**Grounding status**", ""]
+
+    if static_topics:
+        pretty = ", ".join(t.replace("_", " ").title() for t in static_topics)
+        lines.append(f"**Static KB topics:** {pretty}")
+    else:
+        lines.append("**Static KB topics:** none")
+
+    lines.append(f"**Notebooks configured:** {notebook_count} of {total_notebooks}")
+
+    if notebook_count == 0:
+        lines.extend([
+            "",
+            "For deeper clinical grounding, configure NotebookLM in **Settings → Notebooks**.",
+        ])
+
+    return "\n".join(lines)

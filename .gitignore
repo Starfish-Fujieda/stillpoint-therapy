@@ -11,8 +11,14 @@ personas/therapist.json
 # MemPalace persistent memory
 .mempalace/
 
-# Session data
-data/
+# Session data — only the runtime subdirs. The static knowledge
+# base (data/knowledge/) is tracked content, NOT user data, so it's
+# explicitly un-ignored below.
+data/chroma/
+data/memory/
+data/palace/
+!data/knowledge/
+!data/knowledge/**
 sessions/
 
 # IDE / editor configs

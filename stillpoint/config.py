@@ -1,8 +1,15 @@
 """Configuration loading and saving utilities for Stillpoint."""
 
+import os
 from pathlib import Path
 
 import yaml
+
+
+# Environment variable names used for path overrides.
+ENV_PALACE_PATH = "STILLPOINT_PALACE_PATH"
+ENV_MEMPALACE_BIN = "STILLPOINT_MEMPALACE_BIN"
+ENV_NOTEBOOKLM_BIN = "STILLPOINT_NOTEBOOKLM_BIN"
 
 
 def get_project_root() -> Path:
@@ -35,6 +42,46 @@ def get_personas_dir() -> Path:
     personas_dir = get_project_root() / "personas"
     personas_dir.mkdir(parents=True, exist_ok=True)
     return personas_dir
+
+
+def get_palace_dir() -> Path:
+    """Return the palace directory for ChromaDB / MemPalace storage.
+
+    Uses ``STILLPOINT_PALACE_PATH`` if set, otherwise falls back to
+    ``<project_root>/data/palace``.
+    """
+    env_path = os.environ.get(ENV_PALACE_PATH)
+    if env_path:
+        palace_dir = Path(env_path).expanduser()
+    else:
+        palace_dir = get_project_root() / "data" / "palace"
+    palace_dir.mkdir(parents=True, exist_ok=True)
+    return palace_dir
+
+
+def get_mempalace_bin() -> str | None:
+    """Return the mempalace binary path, or None if not found.
+
+    Uses ``STILLPOINT_MEMPALACE_BIN`` if set, otherwise searches PATH
+    and the active venv's bin directory.
+    """
+    env_bin = os.environ.get(ENV_MEMPALACE_BIN)
+    if env_bin:
+        path = Path(env_bin).expanduser()
+        return str(path) if path.exists() else None
+    return None
+
+
+def get_notebooklm_bin() -> str | None:
+    """Return the notebooklm binary path, or None if not found.
+
+    Uses ``STILLPOINT_NOTEBOOKLM_BIN`` if set, otherwise searches PATH.
+    """
+    env_bin = os.environ.get(ENV_NOTEBOOKLM_BIN)
+    if env_bin:
+        path = Path(env_bin).expanduser()
+        return str(path) if path.exists() else None
+    return None
 
 
 def load_config(filename: str) -> dict:
@@ -77,6 +124,25 @@ def is_configured() -> bool:
     config_dir = get_config_dir()
     required_files = ["therapist.yaml", "user_profile.yaml", "treatment_plan.yaml"]
     return all((config_dir / f).exists() for f in required_files)
+
+
+def get_notebook_count() -> int:
+    """Count configured notebooks with non-empty ``notebook_id``.
+
+    Reads ``therapist.yaml`` and counts entries in
+    ``therapist.notebooks`` whose ``notebook_id`` is a non-empty
+    string (after stripping whitespace). Returns 0 when the config
+    file is missing or no notebooks are configured.
+    """
+    try:
+        config = load_config("therapist.yaml")
+    except FileNotFoundError:
+        return 0
+    notebooks = config.get("therapist", {}).get("notebooks", []) or []
+    return sum(
+        1 for nb in notebooks
+        if isinstance(nb, dict) and str(nb.get("notebook_id", "")).strip()
+    )
 
 
 def load_source_library() -> dict:

@@ -65,6 +65,42 @@ Everything else (`pipx`, `notebooklm-py`, Chromium) is installed automatically b
 
 ---
 
+## External Dependencies
+
+Stillpoint is self-contained **except** for these external tools, which must be installed separately. `scripts/setup.sh` handles most of them automatically; this section documents what they are and how to override their paths if needed.
+
+| Dependency | What it does | How it's installed | Path override (optional) |
+|------------|-------------|-------------------|-------------------------|
+| **Python 3.11+** | Runtime for the app | System package manager or python.org | — |
+| **NotebookLM CLI** (`notebooklm`) | Queries your Google NotebookLM notebooks for clinical grounding | `pipx install notebooklm-py[browser]` (done by `setup.sh`) | `STILLPOINT_NOTEBOOKLM_BIN` |
+| **MemPalace CLI** (`mempalace`) | Entity-aware memory mining over your sessions | `pip install mempalace` (pulled in via `requirements.txt`) | `STILLPOINT_MEMPALACE_BIN` |
+| **ChromaDB** (Python package) | Vector database for semantic session search | `pip install chromadb` (pulled in via `requirements.txt`) | — |
+| **LLM provider SDK** | Talks to your chosen LLM backend | `pip install anthropic` / `openai` / `google-generativeai` | — |
+
+### Optional dependencies
+
+These are only needed if you use specific features:
+
+| Dependency | Needed for | Install |
+|------------|-----------|---------|
+| `podcastfy` | Local podcast generation (`--method local`) | `pip install podcastfy` |
+| `pyttsx3` | Offline TTS fallback | `pip install pyttsx3` |
+| `gtts` | Google TTS fallback | `pip install gtts` |
+
+### Environment variable overrides
+
+If you installed the CLI tools in a non-standard location, set these before launching:
+
+```bash
+export STILLPOINT_NOTEBOOKLM_BIN="/custom/path/to/notebooklm"
+export STILLPOINT_MEMPALACE_BIN="/custom/path/to/mempalace"
+export STILLPOINT_PALACE_PATH="/custom/path/to/palace"
+```
+
+See `.env.example` for the full list.
+
+---
+
 ## Quick Start
 
 ```bash
@@ -152,6 +188,18 @@ NotebookLM's Audio Overview feature can generate audio summaries from session
 content or specific topics. This is useful for processing key themes between
 sessions. Launch it from the Gradio UI's "Generate Podcast" button.
 
+If NotebookLM is unavailable (e.g., daily quota reached), you can fall back to
+local TTS generation using the `--fallback-to-local` flag, or use `--method local`
+to generate locally from the start:
+
+```bash
+# Default: try NotebookLM, with automatic local fallback on failure
+python scripts/generate_podcast.py --topic anxiety --fallback-to-local
+
+# Generate locally from the start (no NotebookLM needed)
+python scripts/generate_podcast.py --topic anxiety --method local
+```
+
 ---
 
 ## Configuration
@@ -213,9 +261,16 @@ work normally. For full functionality, run natively using `scripts/setup.sh`.
 Environment variables (pass via shell or `.env` file):
 
 ```bash
+# LLM API keys (pick at least one)
 ANTHROPIC_API_KEY=your-key
 OPENAI_API_KEY=your-key
+OPENROUTER_API_KEY=your-key
 GOOGLE_API_KEY=your-key
+
+# Optional: override paths for non-standard installations
+STILLPOINT_PALACE_PATH=/custom/path/to/palace
+STILLPOINT_NOTEBOOKLM_BIN=/custom/path/to/notebooklm
+STILLPOINT_MEMPALACE_BIN=/custom/path/to/mempalace
 ```
 
 ---

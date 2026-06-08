@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from stillpoint.config import get_project_root
+from stillpoint.config import get_palace_dir, get_mempalace_bin, get_project_root
 
 # Attempt ChromaDB import; degrade gracefully if not installed.
 try:
@@ -43,24 +43,21 @@ def _get_memory_dir() -> Path:
 
 
 def _get_palace_dir() -> Path:
-    """Return the shared palace directory for MemPalace and ChromaDB.
-
-    Both MemPalace (mempalace_drawers collection) and our direct semantic
-    search (sessions collection) share this single ChromaDB store — the
-    same pattern used in the reference therapy project.
-    """
-    palace_dir = get_project_root() / "data" / "palace"
-    palace_dir.mkdir(parents=True, exist_ok=True)
-    return palace_dir
+    """Return the shared palace directory for MemPalace and ChromaDB."""
+    return get_palace_dir()
 
 
 def _find_mempalace() -> str | None:
     """Locate the mempalace binary.
 
-    Checks PATH first (system/homebrew/pipx installs), then falls back to
-    the venv bin directory — needed when run.sh calls .venv/bin/python
-    directly without activating the venv (so .venv/bin is not in PATH).
+    Resolution order:
+    1. ``STILLPOINT_MEMPALACE_BIN`` environment variable
+    2. PATH (system/homebrew/pipx installs)
+    3. The active venv's bin directory
     """
+    env_bin = get_mempalace_bin()
+    if env_bin:
+        return env_bin
     binary = shutil.which("mempalace")
     if binary:
         return binary

@@ -4,6 +4,7 @@ Provides a Gradio tab for editing:
 - LLM backend (provider, model, API key env var)
 - NotebookLM notebook definitions (add/remove)
 - Therapist preferences (from persona config)
+- Processing style + human therapist modality (from user_profile.yaml)
 - Referral resources (freeform markdown)
 """
 
@@ -27,11 +28,36 @@ _DEFAULT_MODELS: dict[str, str] = {
     "ollama": "llama3",
 }
 
+# Human therapist modality choices (matches the original onboarding
+# question that lived in character_design, moved to Settings in PR 2).
+_HUMAN_THERAPIST_MODALITIES = [
+    "ACT",
+    "DBT",
+    "CBT",
+    "Psychodynamic",
+    "Somatic",
+    "Other / Mixed",
+    "Not in human therapy",
+]
+
+# Communication preference choices (matches the new onboarding
+# picker's labels, mapped to the existing communication_preference
+# schema on save: concrete→direct, analytical→gentle, mixed→mixed).
+_COMMUNICATION_PREFERENCES = ["concrete", "analytical", "mixed"]
+
 
 def _load_therapist_config() -> dict:
     """Load therapist.yaml, returning empty dict on missing file."""
     try:
         return load_config("therapist.yaml")
+    except FileNotFoundError:
+        return {}
+
+
+def _load_user_profile() -> dict:
+    """Load user_profile.yaml, returning empty dict on missing file."""
+    try:
+        return load_config("user_profile.yaml")
     except FileNotFoundError:
         return {}
 
@@ -135,6 +161,25 @@ def create_settings_tab() -> gr.Tab:
                 "Add or remove NotebookLM notebooks. "
                 "The **Topic** column is required; leave Notebook ID blank until you create the notebook."
             )
+            gr.Markdown(
+                "### How to connect NotebookLM\n\n"
+                "NotebookLM is Google's research notebook tool. Each notebook "
+                "contains your own sources (PDFs, web pages, etc.) that the "
+                "therapist can query for clinical grounding. Without a notebook "
+                "configured, the therapist falls back to the built-in static "
+                "knowledge base (less specific than live grounding, but better "
+                "than `[UNGROUNDED]`).\n\n"
+                "**4 steps to set up:**\n\n"
+                "1. **Create or sign in to a Google account** at "
+                "[notebooklm.google.com](https://notebooklm.google.com).\n"
+                "2. **Create a new notebook** — click the \"+ New notebook\" button.\n"
+                "3. **Copy the notebook ID from the URL.** The URL looks like "
+                "`https://notebooklm.google.com/notebook/<UUID>` — copy the UUID "
+                "(the long string after `/notebook/`).\n"
+                "4. **Paste the ID in the table below** — fill in the Topic "
+                "(a name for the notebook), paste the Notebook ID, and describe "
+                "when to query it."
+            )
 
             therapist_cfg = cfg.get("therapist", {})
             existing_notebooks = therapist_cfg.get("notebooks", [])
@@ -190,6 +235,45 @@ def create_settings_tab() -> gr.Tab:
             )
 
         # ------------------------------------------------------------------ #
+        # Section 5: Processing Style & Human Therapist Modality (PR 2)        #
+        # ------------------------------------------------------------------ #
+        # These fields were moved out of the onboarding wizard in PR 2
+        # (Fix 4) to keep onboarding short. They live in
+        # user_profile.yaml and are read by the persona-generation
+        # code via stillpoint.persona.generate_persona().
+        with gr.Accordion("Processing Style", open=False):
+            user_profile = _load_user_profile()
+            user_section = user_profile.get("user", {})
+            ps_section = user_profile.get("processing_style", {})
+
+            human_therapist_modality_input = gr.Dropdown(
+                label="Human Therapist Modality",
+                choices=_HUMAN_THERAPIST_MODALITIES,
+                value=user_section.get("human_therapist_modality", "")
+                or None,
+                allow_custom_value=False,
+                interactive=True,
+            )
+            alexithymia_input = gr.Checkbox(
+                label="Adapt for cognitive vs emotional processing",
+                value=bool(ps_section.get("alexithymia_adapted", False)),
+                interactive=True,
+            )
+            intellectualizing_input = gr.Checkbox(
+                label="Redirect analysis toward experience when present",
+                value=bool(ps_section.get("intellectualizing_redirects", False)),
+                interactive=True,
+            )
+            communication_preference_input = gr.Dropdown(
+                label="Communication Preference",
+                choices=_COMMUNICATION_PREFERENCES,
+                value=ps_section.get("communication_preference", "")
+                or None,
+                allow_custom_value=False,
+                interactive=True,
+            )
+
+        # ------------------------------------------------------------------ #
         # Save button                                                          #
         # ------------------------------------------------------------------ #
         save_btn = gr.Button("Save Settings", variant="primary")
@@ -204,6 +288,10 @@ def create_settings_tab() -> gr.Tab:
             therapist_desc: str,
             specializations_str: str,
             referral_content: str,
+            human_therapist_modality: str,
+            alexithymia_adapted: bool,
+            intellectualizing_redirects: bool,
+            communication_preference: str,
         ) -> str:
             """Validate and persist all settings."""
             # Validate notebooks: no blank topic names
@@ -251,6 +339,28 @@ def create_settings_tab() -> gr.Tab:
             # Save therapist.yaml
             save_config("therapist.yaml", current)
 
+            # Save user_profile.yaml (PR 2, Fix 4: processing style
+            # + human therapist modality moved here from onboarding)
+            try:
+                user_profile = load_config("user_profile.yaml")
+            except FileNotFoundError:
+                user_profile = {}
+            user_profile.setdefault("user", {})
+            user_profile["user"]["human_therapist_modality"] = (
+                human_therapist_modality or ""
+            )
+            user_profile.setdefault("processing_style", {})
+            user_profile["processing_style"]["alexithymia_adapted"] = bool(
+                alexithymia_adapted
+            )
+            user_profile["processing_style"]["intellectualizing_redirects"] = bool(
+                intellectualizing_redirects
+            )
+            user_profile["processing_style"]["communication_preference"] = (
+                communication_preference or ""
+            )
+            save_config("user_profile.yaml", user_profile)
+
             # Save referral resources
             _save_referral_resources(referral_content)
 
@@ -268,6 +378,10 @@ def create_settings_tab() -> gr.Tab:
                 therapist_desc_input,
                 specializations_input,
                 referral_input,
+                human_therapist_modality_input,
+                alexithymia_input,
+                intellectualizing_input,
+                communication_preference_input,
             ],
             outputs=[status_msg],
         )

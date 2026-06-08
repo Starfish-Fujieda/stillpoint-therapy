@@ -1,16 +1,29 @@
 """Onboarding interview engine for Stillpoint.
 
-Manages the 6-phase onboarding process:
+Manages the onboarding process (was 6 phases; reduced to 4 in PR 2
+Fix 4). A 5th end-of-wizard button screen (the processing-style
+picker) is rendered in ``app/onboarding_wizard.py``.
+
+Phases:
 1. Welcome — What is Stillpoint, consent
 2. Character Design — Therapist preferences
 3. Infrastructure — NotebookLM + memory setup
 4. Notebooks — Clinical concerns → notebook topology
-5. Sources — Book/source recommendations per notebook
-6. Processing Style — Optional processing adaptations
+
+Removed in PR 2 Fix 4 (moved to Settings, with the exception of
+communication preference which became the end-of-wizard picker):
+- Sources phase — book/source recommendations; on-demand in
+  Settings → Notebooks.
+- Processing Style phase — alexithymia + intellectualizing moved
+  to Settings; communication preference became the picker.
+- human_therapist_modality — moved from character_design to
+  Settings.
 """
 
+import os
 from datetime import datetime
 
+import gradio as gr
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from stillpoint.config import (
@@ -20,14 +33,12 @@ from stillpoint.config import (
 )
 
 
-# Phase definitions
+# Phase definitions (PR 2, Fix 4: 4 phases, down from 6)
 PHASES = [
     "welcome",
     "character_design",
     "infrastructure",
     "notebooks",
-    "sources",
-    "processing_style",
 ]
 
 
@@ -169,26 +180,6 @@ def get_phase_questions(phase: str) -> list[dict]:
                 "required": True,
             },
             {
-                "id": "human_therapist_modality",
-                "type": "choice",
-                "question": (
-                    "Are you also working with a human therapist? If so, what approach "
-                    "do they use?\n\n"
-                    "This helps the tool keep its framing coherent with your therapy room. "
-                    "Choose 'Not in human therapy' if this doesn't apply."
-                ),
-                "choices": [
-                    "ACT",
-                    "DBT",
-                    "CBT",
-                    "Psychodynamic",
-                    "Somatic",
-                    "Other / Mixed",
-                    "Not in human therapy",
-                ],
-                "required": False,
-            },
-            {
                 "id": "description",
                 "type": "textarea",
                 "question": (
@@ -264,88 +255,6 @@ def get_phase_questions(phase: str) -> list[dict]:
             },
         ]
 
-    elif phase == "sources":
-        return [
-            {
-                "id": "sources_info",
-                "type": "info",
-                "question": (
-                    "## Source Recommendations\n\n"
-                    "For each notebook, here are the recommended books and resources. "
-                    "These are curated clinical sources that will ground your therapist's responses.\n\n"
-                    "When you create notebooks in NotebookLM, upload PDFs or text from these sources."
-                ),
-            },
-            {
-                "id": "confirm_sources",
-                "type": "confirm",
-                "question": "Would you like to save these source recommendations for reference?",
-                "required": True,
-            },
-        ]
-
-    elif phase == "processing_style":
-        return [
-            {
-                "id": "processing_style_info",
-                "type": "info",
-                "question": (
-                    "## Processing Style (Optional)\n\n"
-                    "These questions help adapt the therapist to your processing style. "
-                    "You can skip this section entirely — the therapist will learn your style "
-                    "during sessions."
-                ),
-            },
-            {
-                "id": "wants_processing_questions",
-                "type": "choice",
-                "question": "Would you like to answer questions about your processing style?",
-                "choices": [
-                    "Yes, let's do it",
-                    "No, let the therapist figure it out",
-                ],
-                "required": True,
-            },
-            {
-                "id": "alexithymia",
-                "type": "choice",
-                "question": (
-                    "When someone asks 'how are you feeling?', is your answer usually:\n\n"
-                    "- **Cognitive** ('I'm thinking about...', 'I'm processing...')\n"
-                    "- **Emotional** ('I feel sad/angry/happy...')\n"
-                    "- **Mixed** (it depends on the situation)"
-                ),
-                "choices": ["Mostly cognitive", "Mostly emotional", "Mixed"],
-                "required": False,
-            },
-            {
-                "id": "intellectualizing",
-                "type": "choice",
-                "question": (
-                    "Do you tend to analyze your feelings rather than experience them? "
-                    "(This is common and not a flaw — it's just useful for the therapist to know.)"
-                ),
-                "choices": [
-                    "Yes, I tend to intellectualize",
-                    "Sometimes",
-                    "No, I feel things directly",
-                    "I'm not sure",
-                ],
-                "required": False,
-            },
-            {
-                "id": "communication_preference",
-                "type": "choice",
-                "question": "How do you prefer people communicate with you?",
-                "choices": [
-                    "Direct and straightforward",
-                    "Gentle and indirect",
-                    "It varies — read the room",
-                ],
-                "required": False,
-            },
-        ]
-
     return []
 
 
@@ -383,14 +292,6 @@ def process_answer(phase: str, question_id: str, answer: str, state: dict) -> di
         state.setdefault("notebooks_confirmed", {})
         state["notebooks_confirmed"][question_id] = answer
 
-    elif phase == "sources":
-        state.setdefault("sources_confirmed", {})
-        state["sources_confirmed"][question_id] = answer
-
-    elif phase == "processing_style":
-        state.setdefault("processing_style", {})
-        state["processing_style"][question_id] = answer
-
     return state
 
 
@@ -417,13 +318,6 @@ def is_phase_complete(phase: str, state: dict) -> bool:
 
     elif phase == "notebooks":
         return bool(state.get("notebooks_confirmed", {}).get("confirm_notebooks"))
-
-    elif phase == "sources":
-        return bool(state.get("sources_confirmed", {}).get("confirm_sources"))
-
-    elif phase == "processing_style":
-        # Processing style is always optional — phase is complete once they've seen it
-        return True
 
     return False
 
@@ -647,3 +541,110 @@ def generate_all_config(state: dict) -> None:
     )
 
     save_config("treatment_plan.yaml", __import__("yaml").safe_load(treatment_plan_yaml))
+
+
+def generate_quick_start_config(api_key: str | None) -> dict:
+    """Build a minimal valid state dict for Quick Start.
+
+    Returns a state dict that ``generate_all_config()`` can consume
+    to produce a working Stillpoint config in one click. The Quick
+    Start panel in ``app/main.py`` wires this directly.
+
+    When ``api_key`` is a non-blank string, it's also written to
+    ``ANTHROPIC_API_KEY`` in the current process so the LLM call
+    works in this Gradio session. (Env vars don't persist across
+    processes, so the user still needs to set the env var externally
+    for future sessions — but the immediate session works.)
+
+    When ``api_key`` is None or blank, the env var is not set, and
+    the chat surface displays an "API key required" banner so the
+    user gets a clear message instead of a silent failure.
+
+    Default config (per the friction-reduction plan, Fix 2):
+        - Therapist name: "Your Therapist" (rename in Settings)
+        - Directness: "Balanced"
+        - Structure: "Mixed"
+        - Specializations: ["ACT — Defusion & Values"]
+          (matches what PR 1's static KB actually covers)
+        - LLM provider: Anthropic
+        - API key: from input, or blank if skipped
+        - Notebooks: required notebooks with blank IDs
+          (static KB handles grounding)
+        - Processing style: defaults
+    """
+    if api_key and api_key.strip():
+        os.environ["ANTHROPIC_API_KEY"] = api_key.strip()
+    return {
+        "user_name": "",
+        "welcome": {
+            "consent": True,
+            "user_name": "",
+        },
+        "character_design": {
+            "name": "Your Therapist",
+            "directness": "Balanced",
+            "structure": "Mixed",
+            "humor": "",
+            "specializations": ["ACT — Defusion & Values"],
+            "description": "",
+        },
+        "infrastructure": {
+            "llm_provider": "Anthropic (Claude)",
+            "api_key_set": True,
+        },
+        "notebooks_confirmed": {
+            "confirm_notebooks": True,
+        },
+    }
+
+
+# Picker choice labels (used by the picker UI and the build_processing_style
+# mapping in app/onboarding_wizard.py).
+PICKER_CHOICES = ["concrete", "analytical", "mixed"]
+
+# Mapping from picker choice → OLD communication_preference labels
+# (per user decision: zero schema change to therapist.yaml).
+# The values here are the OLD human-readable labels that
+# build_processing_style() already understands via substring
+# matching. So the picker stores these full strings, and
+# build_processing_style consumes them unchanged.
+#
+# The mapping (per plan): concrete → "Direct and straightforward",
+# analytical → "Gentle and indirect", mixed → "It varies — read the
+# room". The "analytical → Gentle" mapping is semantically imperfect
+# but accepted in favor of no schema churn.
+PICKER_TO_COMMUNICATION = {
+    "concrete": "Direct and straightforward",
+    "analytical": "Gentle and indirect",
+    "mixed": "It varies — read the room",
+}
+
+
+def processing_style_picker() -> tuple:
+    """Build the end-of-wizard 3-button processing-style picker.
+
+    Returns:
+        Tuple of (column, concrete_btn, analytical_btn, mixed_btn).
+        The Column is invisible by default; the wizard makes it
+        visible after the 4 phases complete.
+
+    Wiring pattern: this function does NOT register click handlers.
+    That happens in ``app/onboarding_wizard.py`` after this function
+    returns its components, mirroring the ``done_btn.click`` pattern
+    in ``app/main.py``. The click handler sets
+    ``state["processing_style"]["communication_preference"]`` to the
+    user's choice (mapped via ``PICKER_TO_COMMUNICATION``) and then
+    advances to ``_finish_onboarding``.
+    """
+    picker_col = gr.Column(visible=False)
+    with picker_col:
+        gr.Markdown("## How do you prefer to communicate?")
+        gr.Markdown(
+            "Pick the style that fits you best. You can change this "
+            "in Settings later."
+        )
+        with gr.Row():
+            concrete_btn = gr.Button("Concrete", variant="primary")
+            analytical_btn = gr.Button("Analytical", variant="primary")
+            mixed_btn = gr.Button("Mixed", variant="primary")
+    return picker_col, concrete_btn, analytical_btn, mixed_btn

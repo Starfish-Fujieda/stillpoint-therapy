@@ -6,11 +6,13 @@ up to 3 retries.
 """
 
 import logging
+import os
 import shutil
 import subprocess
+from pathlib import Path
 from subprocess import TimeoutExpired
 
-from stillpoint.config import load_config
+from stillpoint.config import get_notebooklm_bin, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +21,21 @@ _TIMEOUT_SECONDS = 60
 
 
 def _notebooklm_bin() -> str:
-    """Return path to the notebooklm CLI, or raise if not found."""
+    """Return path to the notebooklm CLI, or raise if not found.
+
+    Resolution order:
+    1. ``STILLPOINT_NOTEBOOKLM_BIN`` environment variable
+    2. PATH
+    """
+    env_bin = get_notebooklm_bin()
+    if env_bin:
+        return env_bin
     binary = shutil.which("notebooklm")
     if binary is None:
         raise RuntimeError(
             "notebooklm CLI not found in PATH. "
-            "Run scripts/setup.sh to install it via pipx."
+            "Run scripts/setup.sh to install it via pipx, "
+            "or set STILLPOINT_NOTEBOOKLM_BIN to its full path."
         )
     return binary
 
@@ -40,6 +51,37 @@ def get_available_notebooks() -> list[dict]:
         return config.get("therapist", {}).get("notebooks", [])
     except FileNotFoundError:
         return []
+
+
+def get_grounding_status() -> dict:
+    """Return the current grounding status for the UI status indicator.
+
+    Returns:
+        Dict with:
+        - ``notebook_count``: number of configured notebooks with
+          non-empty ``notebook_id``
+        - ``static_topics``: list of loaded static KB topic keys
+          (empty if static KB is disabled or has no content)
+        - ``static_available``: True if the static KB is enabled and
+          has loaded content
+    """
+    notebooks = get_available_notebooks()
+    notebook_count = sum(
+        1 for nb in notebooks
+        if nb.get("notebook_id", "").strip()
+    )
+    if _static_kb_enabled():
+        static_kb = _load_static_knowledge()
+        static_topics = list(static_kb.keys())
+        static_available = bool(static_kb)
+    else:
+        static_topics = []
+        static_available = False
+    return {
+        "notebook_count": notebook_count,
+        "static_topics": static_topics,
+        "static_available": static_available,
+    }
 
 
 def select_relevant_notebooks(question: str) -> list[dict]:
@@ -112,24 +154,30 @@ def query_knowledge(question: str, topics: list[str] | None = None) -> str:
 
     Selects relevant notebooks by matching when_to_query keywords against
     the question, then queries each one. Responses are joined with blank
-    lines when multiple notebooks match.
+    lines when multiple notebooks match. If all NotebookLM queries fail
+    (no binary, no notebooks, or all notebooks fail), falls back to the
+    static knowledge base loaded from ``data/knowledge/``. The static KB
+    can be disabled with ``STILLPOINT_STATIC_KB=false``.
 
     Args:
         question: The clinical question to ground.
         topics: Unused in v2 (reserved for future topic-key filtering).
 
     Returns:
-        Grounded response text, or `[UNGROUNDED]` if all queries fail.
+        Grounded response text (from NotebookLM or the static KB), or
+        ``[UNGROUNDED]`` if neither source can answer.
     """
     try:
         binary = _notebooklm_bin()
     except RuntimeError as exc:
         logger.warning("Knowledge grounding skipped: %s", exc)
-        return "[UNGROUNDED]"
+        static = _try_static_kb(question)
+        return static if static else "[UNGROUNDED]"
 
     notebooks = select_relevant_notebooks(question)
     if not notebooks:
-        return "[UNGROUNDED — no notebooks configured]"
+        static = _try_static_kb(question)
+        return static if static else "[UNGROUNDED — no notebooks configured]"
 
     responses: list[str] = []
     for nb in notebooks:
@@ -142,6 +190,109 @@ def query_knowledge(question: str, topics: list[str] | None = None) -> str:
             responses.append(answer)
 
     if not responses:
-        return "[UNGROUNDED]"
+        static = _try_static_kb(question)
+        return static if static else "[UNGROUNDED]"
 
     return "\n\n".join(responses)
+
+
+# ---- Static knowledge base fallback ----------------------------------------
+
+def _static_kb_enabled() -> bool:
+    """Return True unless ``STILLPOINT_STATIC_KB`` is set to a falsy value.
+
+    Default is enabled. Recognized falsy values (case-insensitive):
+    ``false``, ``0``, ``no``, ``off``.
+    """
+    flag = os.environ.get("STILLPOINT_STATIC_KB", "true").lower()
+    return flag not in ("false", "0", "no", "off")
+
+
+def _load_static_knowledge() -> dict[str, str]:
+    """Load static knowledge base from ``data/knowledge/``.
+
+    Each ``.md`` file (except ``README.md``) is loaded as a topic. The
+    topic key is the file's stem (e.g., ``act_basics`` for
+    ``act_basics.md``).
+
+    Returns:
+        Dict mapping topic key to file content. Empty if the directory
+        does not exist or contains no ``.md`` files.
+    """
+    knowledge_dir = Path(__file__).resolve().parent.parent / "data" / "knowledge"
+    if not knowledge_dir.exists():
+        return {}
+    topics: dict[str, str] = {}
+    for md_file in sorted(knowledge_dir.glob("*.md")):
+        if md_file.name == "README.md":
+            continue
+        topic_key = md_file.stem
+        try:
+            topics[topic_key] = md_file.read_text(encoding="utf-8")
+        except OSError as exc:
+            logger.warning("Failed to load static KB file %s: %s", md_file, exc)
+    return topics
+
+
+def _extract_keywords(content: str) -> list[str]:
+    """Extract keywords from a markdown file's ``keywords:`` line.
+
+    Looks for a line starting with ``keywords:`` in the first 50 lines
+    of the file. Returns lowercase keywords. Empty if not found.
+    """
+    for line in content.split("\n")[:50]:
+        stripped = line.strip().lower()
+        if stripped.startswith("keywords:"):
+            kw_str = line.split(":", 1)[1].strip()
+            return [k.strip().lower() for k in kw_str.split(",") if k.strip()]
+    return []
+
+
+def _query_static_knowledge(
+    question: str,
+    static_kb: dict[str, str],
+) -> str | None:
+    """Score each static KB topic by keyword hits; return the best match.
+
+    The topic with the most keyword hits in the question wins. Ties go
+    to the topic that appears first in the sorted iteration order.
+
+    Args:
+        question: The clinical question to ground.
+        static_kb: Dict mapping topic key to file content.
+
+    Returns:
+        Tagged, sourced content from the best-matching topic, or
+        ``None`` if no topic has any keyword hit.
+    """
+    if not static_kb:
+        return None
+    question_lower = question.lower()
+    best_key: str | None = None
+    best_score = 0
+    for topic_key, content in static_kb.items():
+        keywords = _extract_keywords(content)
+        if not keywords:
+            continue
+        score = sum(1 for kw in keywords if kw in question_lower)
+        if score > best_score:
+            best_score = score
+            best_key = topic_key
+    if best_key is None:
+        return None
+    return (
+        f"[GROUNDED — static knowledge base, source: {best_key}]\n\n"
+        f"{static_kb[best_key]}"
+    )
+
+
+def _try_static_kb(question: str) -> str | None:
+    """Try to ground via the static knowledge base.
+
+    Returns tagged content if a topic matches; ``None`` if the static
+    KB is disabled, has no content, or no topic matches the question.
+    """
+    if not _static_kb_enabled():
+        return None
+    static_kb = _load_static_knowledge()
+    return _query_static_knowledge(question, static_kb)

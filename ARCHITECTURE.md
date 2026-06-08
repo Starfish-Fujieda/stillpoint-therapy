@@ -166,7 +166,8 @@ llm:
 
 # MemPalace
 memory:
-  palace_path: ~/.stillpoint/palace
+  palace_path: data/palace                # Project-relative by default;
+                                          # override with STILLPOINT_PALACE_PATH
   collections:
     - mempalace_drawers
     - therapy
@@ -230,13 +231,15 @@ session_log: []
 ```python
 def query_knowledge(question: str, topics: list[str] | None = None) -> str:
     """Query the appropriate NotebookLM notebook(s) for clinical grounding.
-    
+
     - If topics provided, query only those notebooks
     - If no topics, analyze the question and select relevant notebooks
     - Retry on timeout (up to 3 attempts)
     - Return grounded response or label as [UNGROUNDED]
     """
 ```
+
+The NotebookLM CLI binary is resolved via `STILLPOINT_NOTEBOOKLM_BIN` env var, then PATH.
 
 ### `stillpoint/memory.py` — MemPalace Interface
 
@@ -253,6 +256,10 @@ def get_wake_up_context() -> str:
 def get_session_count() -> int:
     """Return total number of stored sessions."""
 ```
+
+Path resolution (all overrideable via environment variables):
+- **Palace directory** — `STILLPOINT_PALACE_PATH` env var, or `<project_root>/data/palace`
+- **MemPalace binary** — `STILLPOINT_MEMPALACE_BIN` env var, or PATH search, or active venv bin
 
 ### `stillpoint/session.py` — Session Engine
 
@@ -326,15 +333,22 @@ def generate_interpretation_log(sessions: list[str] | None = None) -> str:
 ### `stillpoint/podcast.py` — Podcast Generation
 
 ```python
-def generate_podcast(topic: str | None = None, method: str = "notebooklm") -> str:
+def generate_podcast(
+    topic: str | None = None,
+    method: str = "notebooklm",
+    fallback_to_local: bool = False,
+) -> str:
     """Generate a therapy podcast episode.
-    
+
     method: "notebooklm" (Audio Overview) or "local" (Podcastfy + TTS)
     topic: If provided, generate about this topic. If None, auto-select uncovered topic.
-    
+    fallback_to_local: If True, automatically fall back to local TTS when NotebookLM fails.
+
     Returns path to generated audio file.
     """
 ```
+
+The NotebookLM CLI binary is resolved via `STILLPOINT_NOTEBOOKLM_BIN` env var, then PATH.
 
 ### `stillpoint/onboarding.py` — Onboarding Logic
 
@@ -653,7 +667,12 @@ services:
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       # Or: - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Or: - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       # Or: - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # Optional path overrides:
+      # - STILLPOINT_PALACE_PATH=/app/data/palace
+      # - STILLPOINT_NOTEBOOKLM_BIN=/usr/local/bin/notebooklm
+      # - STILLPOINT_MEMPALACE_BIN=/usr/local/bin/mempalace
 
 volumes:
   palace_data:
@@ -683,8 +702,13 @@ volumes:
 
 ### Dependencies
 - `requirements.txt` at project root
-- Core dependencies: `gradio`, `chromadb`, `mempalace`, `notebooklm`, `pyyaml`, `jinja2`
+- Core dependencies: `gradio`, `chromadb`, `mempalace`, `pyyaml`, `jinja2`
 - Optional: `podcastfy`, `anthropic`, `openai`, `google-generativeai`
+
+### Environment Variable Overrides
+- `STILLPOINT_PALACE_PATH` — override ChromaDB storage directory
+- `STILLPOINT_MEMPALACE_BIN` — override MemPalace CLI binary path
+- `STILLPOINT_NOTEBOOKLM_BIN` — override NotebookLM CLI binary path
 
 ---
 

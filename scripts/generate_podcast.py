@@ -70,6 +70,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--fallback-to-local",
+        action="store_true",
+        help=(
+            "If NotebookLM generation fails, automatically fall back to "
+            "local TTS instead of exiting with an error."
+        ),
+    )
+    parser.add_argument(
         "--impetus",
         metavar="TEXT",
         default="",
@@ -90,6 +98,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _prompt_fallback() -> bool:
+    """Ask the user whether to fall back to local generation."""
+    try:
+        response = input("NotebookLM generation failed. Try local generation instead? [y/N] ")
+    except (EOFError, KeyboardInterrupt):
+        return False
+    return response.strip().lower() in ("y", "yes")
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -103,6 +120,8 @@ if __name__ == "__main__":
     print("Generating podcast...")
     print(f"  Topic:  {topic_label}")
     print(f"  Method: {args.method}")
+    if args.fallback_to_local:
+        print("  Fallback to local: enabled")
     if args.impetus:
         print(f"  Impetus: {args.impetus}")
     if args.intended_takeaways:
@@ -114,7 +133,28 @@ if __name__ == "__main__":
             method=args.method,
             impetus=args.impetus,
             intended_takeaways=args.intended_takeaways,
+            fallback_to_local=args.fallback_to_local,
         )
+    except RuntimeError as exc:
+        if args.method == "notebooklm" and not args.fallback_to_local and sys.stdin.isatty():
+            print(f"\nNotebookLM generation failed: {exc}", file=sys.stderr)
+            if _prompt_fallback():
+                print("Falling back to local generation...")
+                try:
+                    audio_path = generate_podcast(
+                        topic=args.topic,
+                        method="local",
+                        impetus=args.impetus,
+                        intended_takeaways=args.intended_takeaways,
+                    )
+                except Exception as local_exc:
+                    print(f"Local generation also failed: {local_exc}", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                sys.exit(1)
+        else:
+            print(f"Error generating podcast: {exc}", file=sys.stderr)
+            sys.exit(1)
     except Exception as e:
         print(f"Error generating podcast: {e}", file=sys.stderr)
         sys.exit(1)
