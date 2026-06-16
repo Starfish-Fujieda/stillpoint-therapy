@@ -7,9 +7,6 @@ shapes and the picker mapping.
 
 import os
 
-import pytest
-
-import stillpoint.onboarding as onboarding
 from stillpoint.onboarding import (
     PHASES,
     PICKER_CHOICES,
@@ -17,7 +14,6 @@ from stillpoint.onboarding import (
     generate_quick_start_config,
     get_phase_questions,
 )
-
 
 # ---------------------------------------------------------------------------
 # PHASES — reduced from 6 to 4 (PR 2, Fix 4)

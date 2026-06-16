@@ -419,7 +419,7 @@ def test_settings_providers_includes_openrouter_and_minimax():
     Regression guard for the OpenRouter gap fix and the MiniMax
     addition — the dropdown must stay in sync with llm.py's dispatch.
     """
-    from app.settings import _PROVIDERS, _DEFAULT_KEY_ENVS, _BASE_URL_PROVIDERS
+    from app.settings import _BASE_URL_PROVIDERS, _DEFAULT_KEY_ENVS, _PROVIDERS
 
     assert "openrouter" in _PROVIDERS
     assert "minimax" in _PROVIDERS

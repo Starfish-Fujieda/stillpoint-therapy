@@ -24,14 +24,13 @@ import os
 from datetime import datetime
 
 import gradio as gr
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader
 
 from stillpoint.config import (
     get_templates_dir,
     load_source_library,
     save_config,
 )
-
 
 # Phase definitions (PR 2, Fix 4: 4 phases, down from 6)
 PHASES = [
@@ -184,8 +183,9 @@ def get_phase_questions(phase: str) -> list[dict]:
                 "type": "textarea",
                 "question": (
                     "Describe your ideal therapist in your own words. (Optional)\n\n"
-                    "What qualities matter most to you? What would make you feel safe talking to them? "
-                    "You can be as brief or detailed as you like."
+                    "What qualities matter most to you? What would make you feel "
+                    "safe talking to them? You can be as brief or detailed as "
+                    "you like."
                 ),
                 "required": False,
             },

@@ -68,13 +68,13 @@ def format_session_as_markdown(session: dict) -> str:
         date_str = ts or "Unknown"
 
     lines = [
-        f"# Session Export",
-        f"",
+        "# Session Export",
+        "",
         f"**Session ID**: {session.get('id', 'unknown')}  ",
         f"**Date**: {date_str}",
-        f"",
-        f"---",
-        f"",
+        "",
+        "---",
+        "",
         session.get("content", "*(no content)*"),
     ]
     return "\n".join(lines)

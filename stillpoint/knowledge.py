@@ -168,7 +168,7 @@ def query_knowledge(question: str, topics: list[str] | None = None) -> str:
         ``[UNGROUNDED]`` if neither source can answer.
     """
     try:
-        binary = _notebooklm_bin()
+        _binary = _notebooklm_bin()
     except RuntimeError as exc:
         logger.warning("Knowledge grounding skipped: %s", exc)
         static = _try_static_kb(question)

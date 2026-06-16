@@ -18,7 +18,6 @@ from stillpoint.config import load_config
 from stillpoint.memory import get_session_count
 from stillpoint.session import SessionEngine
 
-
 # Module-level session engine (persists across Gradio reruns within a session)
 _session_engine: SessionEngine | None = None
 
@@ -72,7 +71,7 @@ def build_chat_view():
     # Visible only when the configured env var is missing/empty.
     # Helps the user understand why the first chat message might
     # fail when they used Quick Start without a key.
-    api_key_warning = gr.Markdown(
+    gr.Markdown(
         value=_api_key_status(),
         visible=bool(_api_key_status()),
     )

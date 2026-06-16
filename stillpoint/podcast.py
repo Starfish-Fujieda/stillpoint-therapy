@@ -215,14 +215,16 @@ def generate_podcast(
     notebook = _select_notebook(topic)
     if notebook is None:
         raise RuntimeError(
-            "No notebooks configured. Complete onboarding and add notebook IDs to config/therapist.yaml."
+            "No notebooks configured. Complete onboarding and add notebook IDs "
+            "to config/therapist.yaml."
         )
 
     notebook_id = notebook.get("notebook_id", "").strip()
     if not notebook_id:
         raise RuntimeError(
             f"Notebook '{notebook.get('topic')}' has no notebook_id set. "
-            "Open NotebookLM, copy the notebook ID from the URL, and add it to config/therapist.yaml."
+            "Open NotebookLM, copy the notebook ID from the URL, and add it to "
+            "config/therapist.yaml."
         )
 
     topic_label = topic or notebook.get("topic", "therapy")

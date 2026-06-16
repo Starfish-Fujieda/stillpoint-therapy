@@ -5,7 +5,6 @@ from pathlib import Path
 
 import yaml
 
-
 # Environment variable names used for path overrides.
 ENV_PALACE_PATH = "STILLPOINT_PALACE_PATH"
 ENV_MEMPALACE_BIN = "STILLPOINT_MEMPALACE_BIN"

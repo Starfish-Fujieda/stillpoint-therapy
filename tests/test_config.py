@@ -6,7 +6,6 @@ import yaml
 from stillpoint.config import (
     get_config_dir,
     get_notebook_count,
-    get_project_root,
     is_configured,
     load_config,
     load_source_library,

@@ -1,7 +1,6 @@
 """Tests for stillpoint.memory."""
 
 import json
-from pathlib import Path
 
 import pytest
 

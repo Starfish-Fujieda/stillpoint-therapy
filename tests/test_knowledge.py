@@ -3,7 +3,6 @@
 import subprocess
 from subprocess import TimeoutExpired
 
-import pytest
 import yaml
 
 import stillpoint.knowledge as knowledge
@@ -18,7 +17,6 @@ from stillpoint.knowledge import (
     query_knowledge,
     select_relevant_notebooks,
 )
-
 
 # ---------------------------------------------------------------------------
 # get_available_notebooks
@@ -151,7 +149,6 @@ def test_query_knowledge_returns_combined_responses(project_root, therapist_conf
 
 
 def test_query_knowledge_skips_notebook_with_no_id(project_root, monkeypatch):
-    import yaml
 
     config = {
         "therapist": {
@@ -167,9 +164,15 @@ def test_query_knowledge_skips_notebook_with_no_id(project_root, monkeypatch):
     assert result == "[UNGROUNDED]"
 
 
-def test_query_knowledge_all_notebooks_fail_returns_ungrounded(project_root, therapist_config, monkeypatch):
+def test_query_knowledge_all_notebooks_fail_returns_ungrounded(
+    project_root, therapist_config, monkeypatch
+):
     monkeypatch.setattr(knowledge.shutil, "which", lambda _: "/usr/bin/notebooklm")
-    monkeypatch.setattr(knowledge.subprocess, "run", lambda *a, **kw: _make_completed(returncode=1, stdout=""))
+    monkeypatch.setattr(
+        knowledge.subprocess,
+        "run",
+        lambda *a, **kw: _make_completed(returncode=1, stdout=""),
+    )
     result = query_knowledge("anxiety")
     assert result == "[UNGROUNDED]"
 
@@ -278,10 +281,16 @@ def test_query_knowledge_falls_back_to_static_kb_when_no_notebooks(project_root,
     assert "[GROUNDED — static knowledge base, source: intrusive_thoughts]" in result
 
 
-def test_query_knowledge_falls_back_to_static_kb_when_all_queries_fail(project_root, therapist_config, monkeypatch):
+def test_query_knowledge_falls_back_to_static_kb_when_all_queries_fail(
+    project_root, therapist_config, monkeypatch
+):
     """When all notebook queries fail, the static KB provides grounding."""
     monkeypatch.setattr(knowledge.shutil, "which", lambda _: "/usr/bin/notebooklm")
-    monkeypatch.setattr(knowledge.subprocess, "run", lambda *a, **kw: _make_completed(returncode=1, stdout=""))
+    monkeypatch.setattr(
+        knowledge.subprocess,
+        "run",
+        lambda *a, **kw: _make_completed(returncode=1, stdout=""),
+    )
     # therapist_config provides notebooks that will all fail; question matches ACT
     result = query_knowledge("How do I defuse from the thought that I am a failure?")
     assert "[GROUNDED — static knowledge base, source: act_basics]" in result

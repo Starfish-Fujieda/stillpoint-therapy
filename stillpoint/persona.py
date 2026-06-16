@@ -4,13 +4,10 @@ Handles loading, generating, and validating the therapist persona.
 The persona is generated from onboarding data using Jinja2 templates.
 """
 
-from datetime import datetime
-from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from stillpoint.config import (
-    get_config_dir,
     get_personas_dir,
     get_templates_dir,
     load_config,
@@ -78,7 +75,8 @@ def get_system_prompt() -> str:
     if processing_style.get("alexithymia_adapted"):
         extras.append(
             "IMPORTANT: This user has difficulty identifying emotions in real time. "
-            "Use cognitive/experiential framing. Avoid somatic questions like 'where do you feel that in your body?'"
+            "Use cognitive/experiential framing. Avoid somatic questions like "
+            "'where do you feel that in your body?'"
         )
     if processing_style.get("intellectualizing_redirects"):
         extras.append(
@@ -114,16 +112,23 @@ def generate_persona(onboarding_data: dict) -> None:
     # Prepare template variables
     character = onboarding_data.get("character_design", {})
     name = character.get("name", "your therapist")
-    description = character.get("description", f"A compassionate AI therapeutic companion named {name}.")
+    description = character.get(
+        "description", f"A compassionate AI therapeutic companion named {name}."
+    )
     specializations = character.get("specializations", [])
-    approach = character.get("approach", "ACT + IFS (Acceptance and Commitment Therapy + Internal Family Systems)")
+    approach = character.get(
+        "approach",
+        "ACT + IFS (Acceptance and Commitment Therapy + Internal Family Systems)",
+    )
 
     communication = {
         "tone": character.get("tone", "warm, curious, non-judgmental"),
         "directness": character.get("directness", "balanced"),
         "structure": character.get("structure", "follows the client's lead"),
         "humor": character.get("humor", "uses gentle humor when appropriate"),
-        "questioning": character.get("questioning", "asks questions before offering interpretations"),
+        "questioning": character.get(
+            "questioning", "asks questions before offering interpretations"
+        ),
         "formality": character.get("formality", "casual but professional"),
     }
 
@@ -192,7 +197,9 @@ def generate_persona(onboarding_data: dict) -> None:
         },
         "processing_style": {
             "alexithymia_adapted": processing_style.get("alexithymia_adapted", False),
-            "intellectualizing_redirects": processing_style.get("intellectualizing_redirects", True),
+            "intellectualizing_redirects": processing_style.get(
+                "intellectualizing_redirects", True
+            ),
             "sensory_considerations": processing_style.get("sensory_considerations", False),
             "communication_preference": processing_style.get("communication_preference", ""),
         },

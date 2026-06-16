@@ -4,8 +4,8 @@ Supports multiple LLM providers: Anthropic, OpenAI, OpenRouter, Google,
 MiniMax, Ollama. Reads provider configuration from config/therapist.yaml.
 """
 
-import os
 import logging
+import os
 
 from stillpoint.config import load_config
 

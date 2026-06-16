@@ -14,12 +14,11 @@ import gradio as gr
 from stillpoint.config import get_notebook_count
 from stillpoint.onboarding import (
     PHASES,
-    get_phase_questions,
+    generate_all_config,
     get_next_phase,
+    get_phase_questions,
     is_phase_complete,
     process_answer,
-    recommend_notebooks,
-    generate_all_config,
     processing_style_picker,
 )
 
@@ -159,7 +158,7 @@ def build_onboarding_view() -> tuple:
     def _advance_phase(phase, onboarding_state):
         """Move to the next phase or show the processing-style picker."""
         next_phase = get_next_phase(phase)
-        phase_idx = PHASES.index(phase) if phase in PHASES else 0
+        _phase_idx = PHASES.index(phase) if phase in PHASES else 0
 
         if next_phase is None:
             # All 4 phases complete — show the processing-style picker
@@ -401,7 +400,10 @@ def build_onboarding_view() -> tuple:
                     current_phase: prev_phase,
                     question_idx: prev_idx,
                     progress_text: gr.update(
-                        value=f"Step {phase_idx} of {len(PHASES)}: {_phase_display_name(prev_phase)}"
+                        value=(
+                            f"Step {phase_idx} of {len(PHASES)}: "
+                            f"{_phase_display_name(prev_phase)}"
+                        )
                     ),
                     status_msg: gr.update(value=""),
                 }

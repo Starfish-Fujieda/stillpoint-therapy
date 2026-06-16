@@ -3,7 +3,6 @@ that were moved from onboarding (human therapist modality,
 alexithymia, intellectualizing, communication preference).
 """
 
-import pytest
 
 
 def test_settings_tab_builds_without_error(project_root):
@@ -12,6 +11,7 @@ def test_settings_tab_builds_without_error(project_root):
     context because create_settings_tab() uses event .change() handlers
     that require a Blocks context."""
     import gradio as gr
+
     from app.settings import create_settings_tab
     with gr.Blocks():
         tab = create_settings_tab()
@@ -48,6 +48,7 @@ def test_load_user_profile_returns_existing_data(project_root):
     """When user_profile.yaml exists, _load_user_profile returns its
     parsed contents."""
     import yaml
+
     from app.settings import _load_user_profile
     data = {
         "user": {"name": "Test", "human_therapist_modality": "ACT"},

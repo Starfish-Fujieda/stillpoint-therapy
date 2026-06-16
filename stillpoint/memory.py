@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from stillpoint.config import get_palace_dir, get_mempalace_bin, get_project_root
+from stillpoint.config import get_mempalace_bin, get_palace_dir, get_project_root
 
 # Attempt ChromaDB import; degrade gracefully if not installed.
 try:

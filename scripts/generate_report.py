@@ -20,7 +20,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-
 IMPORT_ERROR_MSG = """
 Error: stillpoint.report is not yet available.
 
@@ -131,13 +130,13 @@ if __name__ == "__main__":
     sections = parse_sections(args.sections)
     output_path = args.output or get_default_output_path()
 
-    print(f"Generating report...")
+    print("Generating report...")
     if args.since:
         print(f"  Sessions since: {args.since}")
     if sections:
         print(f"  Sections: {', '.join(sections)}")
     if args.anonymize:
-        print(f"  Anonymization: enabled")
+        print("  Anonymization: enabled")
 
     try:
         report_content = generate_session_report(

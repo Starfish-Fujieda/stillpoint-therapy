@@ -193,7 +193,10 @@ def print_gaps(gaps: list[dict], covered: set[str], total: int) -> None:
         print(f"  {i:>2}. {badge} {topic['display_name']}")
         if topic["description"]:
             print(f"        {topic['description']}")
-        print(f"        Sources available: {topic['source_count']}  |  Priority score: {topic['priority_score']}")
+        print(
+            f"        Sources available: {topic['source_count']}  |  "
+            f"Priority score: {topic['priority_score']}"
+        )
         print()
 
 
@@ -209,7 +212,7 @@ def suggest_next(gaps: list[dict]) -> None:
     print("Suggested next topic:")
     print(f"  {top['display_name']}")
     print(f"  Key: {top['key']}")
-    print(f"\nTo generate:")
+    print("\nTo generate:")
     print(f"  python scripts/generate_podcast.py --topic \"{top['key']}\"")
 
 

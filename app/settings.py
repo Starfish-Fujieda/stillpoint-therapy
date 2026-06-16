@@ -11,10 +11,10 @@ Provides a Gradio tab for editing:
 import gradio as gr
 
 from stillpoint.config import (
+    get_project_root,
     load_config,
     load_referral_resources,
     save_config,
-    get_project_root,
 )
 
 # LLM provider options
@@ -198,7 +198,8 @@ def create_settings_tab() -> gr.Tab:
         with gr.Accordion("Notebooks", open=True):
             gr.Markdown(
                 "Add or remove NotebookLM notebooks. "
-                "The **Topic** column is required; leave Notebook ID blank until you create the notebook."
+                "The **Topic** column is required; leave Notebook ID blank until "
+                "you create the notebook."
             )
             gr.Markdown(
                 "### How to connect NotebookLM\n\n"

@@ -1,10 +1,8 @@
 """Tests for stillpoint.report (non-LLM logic only)."""
 
-import json
 from datetime import datetime
 
 import pytest
-import yaml
 
 import stillpoint.report as report
 from stillpoint.report import (
@@ -75,7 +73,6 @@ def test_load_sessions_since_no_index(project_root):
 
 
 def test_load_sessions_since_returns_all_when_since_none(project_root, session_store):
-    sessions_dir = project_root / "config" / "sessions"
     result = _load_sessions_since(None)
     assert len(result) == 2
 

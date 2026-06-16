@@ -50,7 +50,9 @@ class SessionEngine:
         exit_ramp_cadence = treatment_plan.get("exit_ramp", {}).get(
             "meta_question_cadence", 5
         )
-        total_contacts = treatment_plan.get("exit_ramp", {}).get("total_contacts", 0)
+        _total_contacts = treatment_plan.get("exit_ramp", {}).get(
+            "total_contacts", 0
+        )
 
         # Check if the meta-question is due — and distinguish due vs OVERDUE.
         # Due: the cadence interval has been reached.
