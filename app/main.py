@@ -31,14 +31,25 @@ def build_app() -> gr.Blocks:
             with gr.Column(elem_id="quick_start_col"):
                 gr.Markdown("## ⚡ Quick Start")
                 gr.Markdown(
-                    "Already have an Anthropic API key? Paste it below "
-                    "and start chatting in seconds. You can customize the "
-                    "therapist, configure NotebookLM, and adjust every "
+                    "Already have an API key? Pick your provider, paste the "
+                    "key below, and start chatting in seconds. You can customize "
+                    "the therapist, configure NotebookLM, and adjust every "
                     "preference in **Settings** after your first session."
                 )
+                # Import here (not at top) so the panel degrades gracefully
+                # if Gradio import-time issues prevent the constant from
+                # loading. The same constant is also used by app.main's
+                # smoke tests.
+                from stillpoint.onboarding import _QUICK_START_PROVIDER_CHOICES
+                provider_dd = gr.Dropdown(
+                    label="Provider",
+                    choices=_QUICK_START_PROVIDER_CHOICES,
+                    value="Anthropic (Claude)",
+                    interactive=True,
+                )
                 api_key_input = gr.Textbox(
-                    label="Anthropic API Key",
-                    placeholder="sk-ant-... (leave blank to skip and use the wizard below)",
+                    label="API Key",
+                    placeholder="paste your API key (leave blank to skip and use the wizard below)",
                     type="password",
                     interactive=True,
                 )
@@ -72,13 +83,13 @@ def build_app() -> gr.Blocks:
             both the wizard's completion buttons and Quick Start)."""
             return gr.update(visible=False), gr.update(visible=True)
 
-        def on_quick_start(api_key: str):
+        def on_quick_start(api_key: str, provider_choice: str):
             """Handle Quick Start: build state, persist config, switch views."""
             from stillpoint.onboarding import (
                 generate_all_config,
                 generate_quick_start_config,
             )
-            state = generate_quick_start_config(api_key)
+            state = generate_quick_start_config(api_key, provider_choice)
             generate_all_config(state)
             return gr.update(visible=False), gr.update(visible=True)
 
@@ -88,7 +99,7 @@ def build_app() -> gr.Blocks:
         # if needed.
         quick_start_btn.click(
             fn=on_quick_start,
-            inputs=[api_key_input],
+            inputs=[api_key_input, provider_dd],
             outputs=[onboarding_col, main_col],
         )
 

@@ -1,7 +1,7 @@
 """LLM backend abstraction for Stillpoint.
 
-Supports multiple LLM providers: Anthropic, OpenAI, Google, Ollama.
-Reads provider configuration from config/therapist.yaml.
+Supports multiple LLM providers: Anthropic, OpenAI, OpenRouter, Google,
+MiniMax, Ollama. Reads provider configuration from config/therapist.yaml.
 """
 
 import os
@@ -64,6 +64,8 @@ def send_message(
         return _send_ollama(system_prompt, messages, llm_config)
     elif provider == "openrouter":
         return _send_openrouter(system_prompt, messages, llm_config)
+    elif provider == "minimax":
+        return _send_minimax(system_prompt, messages, llm_config)
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
 
@@ -216,6 +218,85 @@ def _send_openrouter(system_prompt: str, messages: list[dict], config: dict) -> 
     except Exception as e:
         logger.error("OpenRouter error: %s", e)
         raise RuntimeError(f"OpenRouter error: {e}") from e
+
+
+def _send_minimax(system_prompt: str, messages: list[dict], config: dict) -> str:
+    """Send a message via the MiniMax API (OpenAI-compatible).
+
+    MiniMax serves an OpenAI-format Chat Completions API on
+    https://api.minimax.io/v1. The ``base_url`` and ``model`` are
+    overridable in ``therapist.yaml`` so a wrong default is a one-line
+    config fix, not a code change.
+    """
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError(
+            "openai package not installed. Install with: pip install openai"
+        )
+
+    api_key_env = config.get("api_key_env", "MINIMAX_API_KEY")
+    api_key = os.environ.get(api_key_env)
+    if not api_key:
+        raise RuntimeError(
+            f"API key not found. Set the {api_key_env} environment variable."
+        )
+
+    model = config.get("model", "MiniMax-M3")
+    base_url = config.get("base_url", "https://api.minimax.io/v1")
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=full_messages,
+            # MiniMax M3 emits reasoning by default. ``reasoning_split: True``
+            # surfaces it in a separate ``reasoning_content`` field on the
+            # response message, leaving ``.content`` as the final answer only.
+            # That keeps the chat surface clean and lets callers (or a future
+            # "show thinking" expander) reach the reasoning on demand.
+            # See https://platform.minimax.io/docs/api-reference/text-openai-api
+            extra_body={"reasoning_split": True},
+        )
+        return _format_minimax_response(response, config)
+    except Exception as e:
+        logger.error("MiniMax error: %s", e)
+        raise RuntimeError(f"MiniMax error: {e}") from e
+
+
+def _format_minimax_response(response, config: dict) -> str:
+    """Format a MiniMax response, optionally including the model's reasoning.
+
+    The ``reasoning_split: True`` extra_body keeps the model's chain-of-thought
+    in a separate ``reasoning_content`` field on the message. By default we
+    return only the final answer (``content``) so the chat surface stays clean.
+    If the user opts in via ``config['show_thinking'] = True``, the reasoning
+    is included as a collapsible ``<details>`` markdown block ahead of the
+    final answer — the user can expand it to inspect the AI's reasoning,
+    or leave it collapsed for a clean view.
+
+    If the model didn't emit reasoning (some calls don't, even on M3), the
+    toggle has no effect and we return the plain content.
+    """
+    message = response.choices[0].message
+    content = message.content or ""
+
+    if not config.get("show_thinking"):
+        return content
+
+    reasoning = getattr(message, "reasoning_content", None)
+    if not reasoning:
+        return content
+
+    return (
+        "<details>\n"
+        "<summary>💭 Model thinking</summary>\n\n"
+        f"{reasoning.strip()}\n\n"
+        f"</details>\n\n{content}"
+    )
 
 
 def _send_ollama(system_prompt: str, messages: list[dict], config: dict) -> str:

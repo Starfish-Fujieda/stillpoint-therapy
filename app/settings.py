@@ -18,7 +18,7 @@ from stillpoint.config import (
 )
 
 # LLM provider options
-_PROVIDERS = ["anthropic", "openai", "google", "ollama"]
+_PROVIDERS = ["anthropic", "openai", "google", "ollama", "openrouter", "minimax"]
 
 # Default model per provider (best-effort; user can override)
 _DEFAULT_MODELS: dict[str, str] = {
@@ -26,7 +26,22 @@ _DEFAULT_MODELS: dict[str, str] = {
     "openai": "gpt-4o",
     "google": "gemini-1.5-pro",
     "ollama": "llama3",
+    "openrouter": "anthropic/claude-sonnet-4-5",
+    "minimax": "MiniMax-M3",
 }
+
+# Default env var name per provider (best-effort; user can override)
+_DEFAULT_KEY_ENVS: dict[str, str] = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+    "google": "GOOGLE_API_KEY",
+    "ollama": "",
+    "openrouter": "OPENROUTER_API_KEY",
+    "minimax": "MINIMAX_API_KEY",
+}
+
+# Providers that need a configurable base_url (not on api.openai.com etc.)
+_BASE_URL_PROVIDERS = {"ollama", "openrouter", "minimax"}
 
 # Human therapist modality choices (matches the original onboarding
 # question that lived in character_design, moved to Settings in PR 2).
@@ -114,43 +129,67 @@ def create_settings_tab() -> gr.Tab:
         with gr.Accordion("LLM Backend", open=True):
             cfg = _load_therapist_config()
             llm_cfg = cfg.get("llm", {})
+            current_provider = llm_cfg.get("provider", "anthropic")
 
             provider_dd = gr.Dropdown(
                 label="Provider",
                 choices=_PROVIDERS,
-                value=llm_cfg.get("provider", "anthropic"),
+                value=current_provider,
                 interactive=True,
             )
             model_input = gr.Textbox(
                 label="Model",
-                value=llm_cfg.get("model", _DEFAULT_MODELS["anthropic"]),
+                value=llm_cfg.get("model", _DEFAULT_MODELS[current_provider]),
                 placeholder="e.g. claude-sonnet-4-20250514",
                 interactive=True,
             )
             api_key_env_input = gr.Textbox(
                 label="API Key Env Var",
-                value=llm_cfg.get("api_key_env", "ANTHROPIC_API_KEY"),
+                value=llm_cfg.get("api_key_env", _DEFAULT_KEY_ENVS.get(current_provider, "")),
                 placeholder="Name of environment variable (not the key itself)",
                 interactive=True,
             )
             base_url_input = gr.Textbox(
-                label="Base URL (Ollama only)",
+                label="Base URL",
                 value=llm_cfg.get("base_url", ""),
-                placeholder="http://localhost:11434",
+                placeholder="e.g. http://localhost:11434 or https://api.minimax.io/v1",
                 interactive=True,
-                visible=llm_cfg.get("provider", "anthropic") == "ollama",
+                visible=current_provider in _BASE_URL_PROVIDERS,
+            )
+            show_thinking_input = gr.Checkbox(
+                label="Show AI thinking (MiniMax only)",
+                info=(
+                    "When enabled, the model's chain-of-thought is shown as a "
+                    "collapsible block above the final reply. Off by default "
+                    "to keep the chat clean."
+                ),
+                value=bool(llm_cfg.get("show_thinking", False)),
+                interactive=True,
+                visible=current_provider == "minimax",
             )
 
             def on_provider_change(provider: str):
-                """Update model default and show/hide base_url when provider changes."""
+                """Update model + env-var defaults and show/hide base_url."""
                 default_model = _DEFAULT_MODELS.get(provider, "")
-                show_base_url = provider == "ollama"
-                return gr.update(value=default_model), gr.update(visible=show_base_url)
+                default_env = _DEFAULT_KEY_ENVS.get(provider, "")
+                show_base_url = provider in _BASE_URL_PROVIDERS
+                show_thinking = provider == "minimax"
+                return (
+                    gr.update(value=default_model),
+                    gr.update(value=default_env),
+                    gr.update(visible=show_base_url),
+                    gr.update(visible=show_thinking),
+                )
 
             provider_dd.change(
                 fn=on_provider_change,
                 inputs=[provider_dd],
-                outputs=[model_input, base_url_input],
+                outputs=[
+                    model_input,
+                    api_key_env_input,
+                    base_url_input,
+                    show_thinking_input,
+                ],
             )
 
         # ------------------------------------------------------------------ #
@@ -283,6 +322,7 @@ def create_settings_tab() -> gr.Tab:
             model: str,
             api_key_env: str,
             base_url: str,
+            show_thinking: bool,
             notebook_rows,
             therapist_name: str,
             therapist_desc: str,
@@ -318,6 +358,10 @@ def create_settings_tab() -> gr.Tab:
             }
             if base_url.strip():
                 llm_section["base_url"] = base_url.strip()
+            # show_thinking is a MiniMax-only option; persist whenever the
+            # user has touched the checkbox, regardless of provider, so
+            # switching back to MiniMax preserves their preference.
+            llm_section["show_thinking"] = bool(show_thinking)
             current["llm"] = llm_section
 
             # Update therapist section (preserve existing keys we don't manage)
@@ -373,6 +417,7 @@ def create_settings_tab() -> gr.Tab:
                 model_input,
                 api_key_env_input,
                 base_url_input,
+                show_thinking_input,
                 notebook_table,
                 therapist_name_input,
                 therapist_desc_input,

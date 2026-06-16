@@ -45,6 +45,7 @@ See the [Crisis Resources](#crisis-resources) section below.
   - [OpenAI](https://platform.openai.com/)
   - [OpenRouter](https://openrouter.ai/) (access to many models via one key)
   - [Google AI](https://aistudio.google.com/)
+  - [MiniMax](https://platform.minimax.io/subscribe/token-plan) (M3 via Token Plan)
   - Ollama (local, no API key needed)
 
 ---
@@ -75,7 +76,7 @@ Stillpoint is self-contained **except** for these external tools, which must be 
 | **NotebookLM CLI** (`notebooklm`) | Queries your Google NotebookLM notebooks for clinical grounding | `pipx install notebooklm-py[browser]` (done by `setup.sh`) | `STILLPOINT_NOTEBOOKLM_BIN` |
 | **MemPalace CLI** (`mempalace`) | Entity-aware memory mining over your sessions | `pip install mempalace` (pulled in via `requirements.txt`) | `STILLPOINT_MEMPALACE_BIN` |
 | **ChromaDB** (Python package) | Vector database for semantic session search | `pip install chromadb` (pulled in via `requirements.txt`) | — |
-| **LLM provider SDK** | Talks to your chosen LLM backend | `pip install anthropic` / `openai` / `google-generativeai` | — |
+| **LLM provider SDK** | Talks to your chosen LLM backend | `pip install anthropic` / `openai` / `google-generativeai` (MiniMax reuses `openai`) | — |
 
 ### Optional dependencies
 
@@ -218,7 +219,7 @@ To change your LLM provider:
 ```yaml
 # config/therapist.yaml
 llm:
-  provider: openai          # anthropic | openai | openrouter | google | ollama
+  provider: openai          # anthropic | openai | openrouter | google | minimax | ollama
   model: gpt-4o
   api_key_env: OPENAI_API_KEY
 ```
@@ -229,6 +230,15 @@ llm:
   provider: openrouter
   model: anthropic/claude-sonnet-4-5
   api_key_env: OPENROUTER_API_KEY
+```
+
+MiniMax example (Token Plan):
+```yaml
+llm:
+  provider: minimax
+  model: MiniMax-M3
+  api_key_env: MINIMAX_API_KEY
+  # base_url defaults to https://api.minimax.io/v1; override here if needed
 ```
 
 To add a new notebook after onboarding:
@@ -266,6 +276,7 @@ ANTHROPIC_API_KEY=your-key
 OPENAI_API_KEY=your-key
 OPENROUTER_API_KEY=your-key
 GOOGLE_API_KEY=your-key
+MINIMAX_API_KEY=your-key
 
 # Optional: override paths for non-standard installations
 STILLPOINT_PALACE_PATH=/custom/path/to/palace

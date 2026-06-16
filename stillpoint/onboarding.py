@@ -202,9 +202,18 @@ def get_phase_questions(phase: str) -> list[dict]:
                     "- **Anthropic** (Claude) — Recommended for therapeutic conversations\n"
                     "- **OpenAI** (GPT-4) — Also excellent quality\n"
                     "- **Google** (Gemini) — Good alternative\n"
+                    "- **OpenRouter** — Access many models via one key\n"
+                    "- **MiniMax** (M3) — Frontier model via the MiniMax Token Plan\n"
                     "- **Ollama** — Run locally, no API costs, but requires a powerful machine"
                 ),
-                "choices": ["Anthropic (Claude)", "OpenAI (GPT-4)", "Google (Gemini)", "Ollama (local)"],
+                "choices": [
+                    "Anthropic (Claude)",
+                    "OpenAI (GPT-4)",
+                    "Google (Gemini)",
+                    "OpenRouter",
+                    "MiniMax (M3)",
+                    "Ollama (local)",
+                ],
                 "required": True,
             },
             {
@@ -215,6 +224,8 @@ def get_phase_questions(phase: str) -> list[dict]:
                     "For Anthropic: `export ANTHROPIC_API_KEY=your-key`\n"
                     "For OpenAI: `export OPENAI_API_KEY=your-key`\n"
                     "For Google: `export GOOGLE_API_KEY=your-key`\n"
+                    "For OpenRouter: `export OPENROUTER_API_KEY=your-key`\n"
+                    "For MiniMax: `export MINIMAX_API_KEY=your-key`\n"
                     "For Ollama: No key needed, just make sure Ollama is running.\n\n"
                     "Have you set your API key?"
                 ),
@@ -437,11 +448,28 @@ def build_llm_config(state: dict) -> dict:
             "model": "gemini-pro",
             "api_key_env": "GOOGLE_API_KEY",
         }
+    elif "OpenRouter" in provider_answer:
+        return {
+            "provider": "openrouter",
+            "model": "anthropic/claude-sonnet-4-5",
+            "api_key_env": "OPENROUTER_API_KEY",
+            "base_url": "https://openrouter.ai/api/v1",
+        }
     elif "Ollama" in provider_answer:
         return {
             "provider": "ollama",
             "model": "llama3",
             "base_url": "http://localhost:11434/v1",
+        }
+    elif "MiniMax" in provider_answer:
+        return {
+            "provider": "minimax",
+            "model": "MiniMax-M3",
+            "api_key_env": "MINIMAX_API_KEY",
+            "base_url": "https://api.minimax.io/v1",
+            # M3 emits reasoning; user can opt in to seeing it. Off by default
+            # so the chat surface stays clean.
+            "show_thinking": False,
         }
 
     # Default
@@ -543,18 +571,28 @@ def generate_all_config(state: dict) -> None:
     save_config("treatment_plan.yaml", __import__("yaml").safe_load(treatment_plan_yaml))
 
 
-def generate_quick_start_config(api_key: str | None) -> dict:
+def generate_quick_start_config(
+    api_key: str | None,
+    provider_choice: str = "Anthropic (Claude)",
+) -> dict:
     """Build a minimal valid state dict for Quick Start.
 
     Returns a state dict that ``generate_all_config()`` can consume
     to produce a working Stillpoint config in one click. The Quick
     Start panel in ``app/main.py`` wires this directly.
 
-    When ``api_key`` is a non-blank string, it's also written to
-    ``ANTHROPIC_API_KEY`` in the current process so the LLM call
-    works in this Gradio session. (Env vars don't persist across
-    processes, so the user still needs to set the env var externally
-    for future sessions — but the immediate session works.)
+    Args:
+        api_key: API key string pasted by the user. When non-blank,
+            it's written to the appropriate env var (see
+            ``_QUICK_START_PROVIDER_ENV_VARS``) in the current process
+            so the LLM call works in this Gradio session. Env vars
+            don't persist across processes, so the user still needs to
+            set the env var externally for future sessions — but the
+            immediate session works.
+        provider_choice: Display name of the chosen provider, e.g.
+            ``"Anthropic (Claude)"`` or ``"MiniMax (M3)"``. Must be
+            one of ``_QUICK_START_PROVIDER_CHOICES``; raises
+            ``ValueError`` otherwise.
 
     When ``api_key`` is None or blank, the env var is not set, and
     the chat surface displays an "API key required" banner so the
@@ -566,14 +604,21 @@ def generate_quick_start_config(api_key: str | None) -> dict:
         - Structure: "Mixed"
         - Specializations: ["ACT — Defusion & Values"]
           (matches what PR 1's static KB actually covers)
-        - LLM provider: Anthropic
+        - LLM provider: from ``provider_choice``
         - API key: from input, or blank if skipped
         - Notebooks: required notebooks with blank IDs
           (static KB handles grounding)
         - Processing style: defaults
     """
-    if api_key and api_key.strip():
-        os.environ["ANTHROPIC_API_KEY"] = api_key.strip()
+    if provider_choice not in _QUICK_START_PROVIDER_ENV_VARS:
+        raise ValueError(
+            f"Unknown Quick Start provider: {provider_choice!r}. "
+            f"Expected one of {list(_QUICK_START_PROVIDER_ENV_VARS)}."
+        )
+
+    env_var = _QUICK_START_PROVIDER_ENV_VARS[provider_choice]
+    if api_key and api_key.strip() and env_var:
+        os.environ[env_var] = api_key.strip()
     return {
         "user_name": "",
         "welcome": {
@@ -589,13 +634,34 @@ def generate_quick_start_config(api_key: str | None) -> dict:
             "description": "",
         },
         "infrastructure": {
-            "llm_provider": "Anthropic (Claude)",
+            "llm_provider": provider_choice,
             "api_key_set": True,
         },
         "notebooks_confirmed": {
             "confirm_notebooks": True,
         },
     }
+
+
+# Quick Start provider choices (display names) and the env-var each one
+# writes the API key into. Empty string means "no key" (Ollama runs locally).
+_QUICK_START_PROVIDER_CHOICES = [
+    "Anthropic (Claude)",
+    "OpenAI (GPT-4)",
+    "Google (Gemini)",
+    "OpenRouter",
+    "MiniMax (M3)",
+    "Ollama (local)",
+]
+
+_QUICK_START_PROVIDER_ENV_VARS: dict[str, str] = {
+    "Anthropic (Claude)": "ANTHROPIC_API_KEY",
+    "OpenAI (GPT-4)": "OPENAI_API_KEY",
+    "Google (Gemini)": "GOOGLE_API_KEY",
+    "OpenRouter": "OPENROUTER_API_KEY",
+    "MiniMax (M3)": "MINIMAX_API_KEY",
+    "Ollama (local)": "",
+}
 
 
 # Picker choice labels (used by the picker UI and the build_processing_style

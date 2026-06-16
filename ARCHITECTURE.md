@@ -54,7 +54,7 @@ Stillpoint is an AI-assisted self-therapy framework. It provides:
 | Web UI                  | Gradio                                               | Accessible, Python-native, easy to containerize, no frontend build step |
 | Clinical Knowledge      | Google NotebookLM                                    | Topic-partitioned notebooks with source-grounded Q&A                    |
 | Session Memory          | MemPalace + ChromaDB                                 | Local vector store, semantic search across sessions                     |
-| LLM Backend             | User's choice (Anthropic / OpenAI / Google / Ollama) | Configurable via `config/therapist.yaml`                                |
+| LLM Backend             | User's choice (Anthropic / OpenAI / OpenRouter / Google / MiniMax / Ollama) | Configurable via `config/therapist.yaml`                                |
 | Language                | Python 3.11+                                         | Required by MemPalace and ChromaDB                                      |
 | Containerization        | Docker + Docker Compose                              | Optional: isolates dependencies, simplifies setup                       |
 | Podcast (easy path)     | NotebookLM Audio Overview                            | Built-in, no local TTS needed                                           |
@@ -156,13 +156,18 @@ therapist:
 
 # LLM Backend
 llm:
-  provider: anthropic          # anthropic | openai | google | ollama
+  provider: anthropic          # anthropic | openai | openrouter | google | minimax | ollama
   model: claude-sonnet-4-20250514
   api_key_env: ANTHROPIC_API_KEY   # Name of env var (not the key itself)
   # For local:
   # provider: ollama
   # model: llama3
   # base_url: http://localhost:11434
+  # For MiniMax (Token Plan):
+  # provider: minimax
+  # model: MiniMax-M3
+  # api_key_env: MINIMAX_API_KEY
+  # base_url: https://api.minimax.io/v1
 
 # MemPalace
 memory:
@@ -669,6 +674,7 @@ services:
       # Or: - OPENAI_API_KEY=${OPENAI_API_KEY}
       # Or: - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       # Or: - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # Or: - MINIMAX_API_KEY=${MINIMAX_API_KEY}
       # Optional path overrides:
       # - STILLPOINT_PALACE_PATH=/app/data/palace
       # - STILLPOINT_NOTEBOOKLM_BIN=/usr/local/bin/notebooklm

@@ -15,9 +15,11 @@
 #   ANTHROPIC_API_KEY   — for Anthropic/Claude backend
 #   OPENAI_API_KEY      — for OpenAI backend
 #   GOOGLE_API_KEY      — for Google Gemini backend
+#   OPENROUTER_API_KEY  — for OpenRouter backend
+#   MINIMAX_API_KEY     — for MiniMax (M3) backend
 #   (none needed for Ollama — configure base_url in config/therapist.yaml)
 #
-# All three are optional; only the key matching your chosen provider is used.
+# All are optional; only the key matching your chosen provider is used.
 # Never commit your .env file.
 
 services:
@@ -37,6 +39,8 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
     restart: unless-stopped
 
 volumes:
