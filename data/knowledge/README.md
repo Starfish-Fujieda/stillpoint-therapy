@@ -13,9 +13,20 @@ substitute for live grounding — it is a safety net that allows the therapist
 to respond with established, well-known clinical concepts at a lower level
 of specificity than the user would get from a configured NotebookLM setup.
 
-Every response drawn from this directory is tagged with the source topic key
-(e.g., `[GROUNDED — static knowledge base, source: act_basics]`) so the user
-and any human therapist can see the source at a glance.
+Every response drawn from this directory is tagged so the user can see at a
+glance what weight to give it. **Until a topic passes clinical review** the
+tag reads
+`[FALLBACK — draft static content, not yet clinically reviewed (topic: act_basics)]`
+— it deliberately does **not** claim "grounded," because clinical sign-off
+has not happened (even though the inline citations are now verified, see the
+two-tier format below).
+
+Once a topic passes clinician/peer review AND every `[verified book-level; …]`
+citation has been finalized to a real locator by a reviewer with the physical
+book, its tag is promoted in `stillpoint/knowledge.py::_query_static_knowledge()`
+to a grounded form (e.g., `[GROUNDED — static knowledge base, source: act_basics]`).
+That promotion is the gate — the tag must not overstate the content's review
+state. Placeholder resolution alone is not sufficient; clinical sign-off is.
 
 ## When this content is used
 
@@ -39,10 +50,21 @@ Each topic file is a standalone markdown document with:
    is used by the keyword-based topic selector. Lowercase, comma-separated.
 3. **Safety framing.** Every file includes a "When this approach is not
    appropriate" section listing contraindications and when to seek human help.
-4. **Inline citations.** Every factual claim is cited inline using the format
-   `[source: Author Year, Ch. X]` or `[source: Author Year, p. X]`. Specific
-   page references are placeholders (`[CITATION NEEDED — Author Year, Ch. X]`)
-   until verified by the reviewer.
+4. **Inline citations.** Every factual claim carries an inline citation in
+   one of two verified forms:
+   - `[verified source: Author Year — *Title*, Ch. X]` — **passage-confirmed.**
+     The cited passage was returned by NotebookLM (when the book is an
+     uploaded source) or is a web-confirmed journal article. This is the
+     strongest tier; chapter/locator is real.
+   - `[verified book-level; exact page pending reviewer — Author Year,
+     *Title*, Ch. X]` — **book-confirmed, page not.** The book, author, year,
+     and publisher are verified (web source), but the specific chapter/page
+     was NOT independently confirmed because the book is not in NotebookLM.
+     A reviewer with the physical book must finalize the locator.
+   - Do NOT write `[source: …]` or invent page numbers. An unverified
+     locator is worse than an honest book-level tag. While drafting, mark
+     unknowns `[CITATION NEEDED — …]`; resolve them into one of the two
+     verified forms before merge.
 5. **Scope disclaimer.** Each file ends with a reminder that this is a
    fallback, not a substitute for live grounding or human therapy.
 
@@ -51,8 +73,13 @@ Each topic file is a standalone markdown document with:
 Before any topic file can be merged:
 
 1. **Self-review by the author.** Confirm every claim is supported by the
-   cited source. Replace `[CITATION NEEDED]` placeholders with verified
-   references.
+   cited source. Resolve every `[CITATION NEEDED]` placeholder into one of
+   the two verified forms above: prefer `[verified source: …]` (passage-
+   confirmed via NotebookLM or a journal article); fall back to
+   `[verified book-level; …]` only when the book is not available to query.
+   For book-level tags, verify the book/author/year/publisher against a real
+   web source — do not trust memory (past drafts have shipped wrong authors,
+   titles, and years).
 2. **Clinician or trained peer review.** A second person with clinical
    training (therapist, counselor, peer-reviewed researcher) reads the file
    end-to-end. Focus areas:

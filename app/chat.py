@@ -257,7 +257,7 @@ def _get_grounding_label() -> str:
     if status["notebook_count"] > 0:
         return "🟢 Grounded"
     if status["static_available"]:
-        return "🟡 Basic grounding"
+        return "🟡 Draft fallback (unreviewed)"
     return "🔴 Not grounded"
 
 
@@ -281,7 +281,8 @@ def _get_grounding_details() -> str:
     if notebook_count == 0:
         lines.extend([
             "",
-            "For deeper clinical grounding, configure NotebookLM in **Settings → Notebooks**.",
+            "For verified clinical grounding, configure NotebookLM in **Settings → Notebooks**. "
+            "(The built-in topics above are drafts, not yet clinically reviewed.)",
         ])
 
     return "\n".join(lines)

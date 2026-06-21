@@ -262,8 +262,9 @@ def _query_static_knowledge(
         static_kb: Dict mapping topic key to file content.
 
     Returns:
-        Tagged, sourced content from the best-matching topic, or
-        ``None`` if no topic has any keyword hit.
+        Tagged fallback content (explicitly marked as a draft, not yet
+        clinically reviewed) from the best-matching topic, or ``None``
+        if no topic has any keyword hit.
     """
     if not static_kb:
         return None
@@ -280,8 +281,15 @@ def _query_static_knowledge(
             best_key = topic_key
     if best_key is None:
         return None
+    # Honest labeling: the shipped static KB files are drafts whose inline
+    # citations are not yet verified (see ``[CITATION NEEDED]`` markers in
+    # ``data/knowledge/*.md``). Until clinician/peer review resolves them, the
+    # tag must NOT claim "grounded" or name a "source" (which implies a
+    # verified citation). It is flagged as an unreviewed fallback so the user
+    # is never misled about how much weight the content carries.
     return (
-        f"[GROUNDED — static knowledge base, source: {best_key}]\n\n"
+        f"[FALLBACK — draft static content, not yet clinically reviewed "
+        f"(topic: {best_key})]\n\n"
         f"{static_kb[best_key]}"
     )
 

@@ -217,7 +217,7 @@ def test_query_static_knowledge_returns_tagged_content_for_match():
     }
     result = _query_static_knowledge("tell me about alpha and beta", static_kb)
     assert result is not None
-    assert "[GROUNDED — static knowledge base, source: test_topic]" in result
+    assert "[FALLBACK — draft static content, not yet clinically reviewed (topic: test_topic)]" in result
     assert "Topic content here." in result
 
 
@@ -243,7 +243,7 @@ def test_query_static_knowledge_picks_best_match_on_keyword_count():
     }
     result = _query_static_knowledge("alpha beta gamma", static_kb)
     assert result is not None
-    assert "source: strong" in result
+    assert "topic: strong" in result
     assert "Strong content." in result
 
 
@@ -271,14 +271,14 @@ def test_query_knowledge_falls_back_to_static_kb_when_no_binary(project_root, mo
     """When the notebooklm binary is missing, the static KB provides grounding."""
     monkeypatch.setattr(knowledge.shutil, "which", lambda _: None)
     result = query_knowledge("How do I defuse from the thought that I am a failure?")
-    assert "[GROUNDED — static knowledge base, source: act_basics]" in result
+    assert "[FALLBACK — draft static content, not yet clinically reviewed (topic: act_basics)]" in result
 
 
 def test_query_knowledge_falls_back_to_static_kb_when_no_notebooks(project_root, monkeypatch):
     """When no notebooks are configured, the static KB provides grounding."""
     monkeypatch.setattr(knowledge.shutil, "which", lambda _: "/usr/bin/notebooklm")
     result = query_knowledge("I keep having unwanted intrusive thoughts about violence")
-    assert "[GROUNDED — static knowledge base, source: intrusive_thoughts]" in result
+    assert "[FALLBACK — draft static content, not yet clinically reviewed (topic: intrusive_thoughts)]" in result
 
 
 def test_query_knowledge_falls_back_to_static_kb_when_all_queries_fail(
@@ -293,7 +293,7 @@ def test_query_knowledge_falls_back_to_static_kb_when_all_queries_fail(
     )
     # therapist_config provides notebooks that will all fail; question matches ACT
     result = query_knowledge("How do I defuse from the thought that I am a failure?")
-    assert "[GROUNDED — static knowledge base, source: act_basics]" in result
+    assert "[FALLBACK — draft static content, not yet clinically reviewed (topic: act_basics)]" in result
 
 
 def test_query_knowledge_static_kb_disabled_falls_through(project_root, monkeypatch):

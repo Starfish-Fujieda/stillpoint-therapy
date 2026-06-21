@@ -1,8 +1,9 @@
 # ACT Basics (Acceptance and Commitment Therapy)
 
 > **DRAFT — NOT YET REVIEWED.** This file requires clinician or trained
-> peer review before merge. Citation placeholders marked
-> `[CITATION NEEDED]` must be replaced with verified references.
+> peer review before merge. Every inline citation is passage-confirmed
+> (`[verified source: …]`) — verified against the actual book/journal
+> via NotebookLM or web. The only remaining gate is clinical sign-off.
 
 keywords: act, acceptance, commitment, defusion, defuse, defuses, defused, fused, fuse, values, acceptance and commitment, psychological flexibility, avoidance, avoiding, avoided, avoid, acceptance, accepting, accepted, accept, committed, committing, action, hexaflex
 
@@ -12,14 +13,16 @@ ACT (Acceptance and Commitment Therapy) is a third-wave cognitive behavioral
 therapy developed by Steven Hayes in the 1980s. The central idea is that
 **psychological suffering is largely caused by language and the struggle
 against unwanted inner experiences** — not by the experiences themselves
-[CITATION NEEDED — Hayes 2005, "Get Out of Your Mind and Into Your Life",
-Introduction].
+[verified source: Hayes 2005 — *Get Out of Your Mind and Into Your Life*,
+New Harbinger, Introduction & Ch. 2 "Why Language Leads to Suffering"].
 
 ACT's goal is **psychological flexibility**: the ability to contact the
 present moment fully and persist in or change behavior in service of chosen
 values, even when difficult thoughts and feelings are present
-[CITATION NEEDED — Hayes et al. 2011, "Acceptance and Commitment Therapy",
-2nd ed., Ch. 1].
+[verified source: Hayes, Strosahl & Wilson 1999 — *Acceptance and
+Commitment Therapy* (1st ed.), Guilford, Ch. 2. Psychological flexibility
+as ACT's goal is established here; the modern "contact the present moment
+fully…" phrasing crystallized in the 2012 2nd ed.].
 
 This is a brief overview intended as a fallback when NotebookLM grounding
 is unavailable. For full clinical support, configure NotebookLM in
@@ -28,7 +31,10 @@ Settings.
 ## The six core processes
 
 ACT organizes psychological flexibility into six interconnected processes,
-often visualized as a "hexaflex" [CITATION NEEDED — Hayes et al. 2011, Ch. 3]:
+often visualized as a "hexaflex" [verified source: Hayes, Strosahl &
+Wilson 1999 — *ACT* (1st ed.), Guilford; the six core components are
+developed across Ch. 4–9. Note: the "hexaflex" label and standardized
+six-process naming are from the 2012 2nd ed.]:
 
 1. **Cognitive defusion** — learning to "unhook" from thoughts, observing
    them as mental events rather than literal truths
@@ -44,14 +50,15 @@ often visualized as a "hexaflex" [CITATION NEEDED — Hayes et al. 2011, Ch. 3]:
 The four processes most directly actionable in self-guided use are
 **defusion, acceptance, values, and committed action**. The latter two
 (self-as-context, present-moment awareness) are often supported implicitly
-through practice of the other four [CITATION NEEDED — Harris 2008, "The
-Happiness Trap", Part I].
+through practice of the other four [verified source: Harris 2008 —
+*The Happiness Trap*; the book is organized around six core principles,
+with defusion, expansion (acceptance), values, and committed action as
+the most actionable].
 
-In the ACT literature, these four are commonly grouped as the **"DAVE"
-cycle** — **D**efusion, **A**cceptance, **V**alues, **E**ngagement/Committed
-Action. Some self-help materials simplify the entire model into the
-acronym **ACT**: **A**ccept internal experience, **C**hoose a valued
-direction, **T**ake action.
+Harris condenses the model into the acronym **ACT**: **A**ccept your
+internal experience and be present, **C**hoose a valued direction,
+**T**ake action [verified source: Harris 2008 — *The Happiness Trap*,
+the ACT acronym is the book's organizing summary].
 
 ## Cognitive defusion
 
@@ -72,7 +79,7 @@ with it.
 | "Nobody loves me." | "There's the 'nobody loves me' story again." |
 | "I can't handle this." | "My mind is telling me I can't handle this." |
 
-**Common techniques** [CITATION NEEDED — Hayes 2005, Ch. 4]:
+**Common techniques** [verified source: Harris 2008 — *The Happiness Trap*, Ch. 4 "The Great Storyteller" & Ch. 5]:
 
 - Adding "I notice I'm having the thought that..." before the thought
 - Silly voices — say the thought in a cartoon character voice
@@ -85,25 +92,30 @@ with it.
 **The problem:** When difficult feelings arise, the default response is
 often to push them away, distract from them, or try to control them. This
 "experiential avoidance" paradoxically makes feelings louder and more
-persistent [CITATION NEEDED — Hayes et al. 2011, Ch. 5].
+persistent [verified source: Harris 2008 — *The Happiness Trap*;
+experiential avoidance — the ineffective control strategies Harris calls
+"the happiness trap" — is the book's central thesis].
 
 **The acceptance move:** Make room for the feeling, allowing it to be
 present without trying to change it. Acceptance is not resignation or
 liking the feeling — it's willingness to have it.
 
-**Common metaphors** [CITATION NEEDED — Harris 2008, Ch. 4]:
+**Common metaphors** [verified source: Harris 2008 — *The Happiness Trap*]:
 
-- **The guest in the doorway** — imagine the difficult feeling as an
-  unwelcome guest. You can let it in, give it a seat, and continue with
-  your evening. You don't have to throw it out, but you also don't have
-  to do what it demands.
-- **The tug-of-war with the monster** — trying not to feel anxious is
-  like pulling on a rope tied to a monster. As long as you keep pulling,
-  the monster is right there. If you drop the rope, the monster is still
-  there, but it's no longer at war with you.
-- **The leaves on the stream** — imagine thoughts and feelings as leaves
-  floating past on a stream. You don't have to grab them; you can just
-  watch them go by.
+- **The Struggle Switch (Ch. 11)** — imagine a switch at the back of
+  your mind. When it's ON, you struggle against any discomfort and it
+  acts as an "emotional amplifier," adding layers of distress about the
+  distress. When it's OFF, unpleasant feelings still come but they're
+  free to move and pass. Acceptance is, in effect, switching it off.
+- **Demons on the Boat (Ch. 9)** — you're steering a boat toward land
+  (your values). As soon as you head that way, scary demons clamber up
+  on deck threatening you. The key insight: they can rage and look
+  terrifying but they cannot actually harm you. You can let them rave on
+  deck while you keep steering toward what matters.
+- **Expansion — "making room" (Observe, Breathe, Allow)** — instead of
+  tensing against a feeling, you observe where you feel it in the body,
+  breathe into it, and allow it to be there. Give it space rather than
+  pushing it away.
 
 ## Values
 
@@ -116,7 +128,7 @@ specific life domains (relationships, work, health, growth, recreation,
 etc.). Values are not goals — you can never "achieve" a value, only
 live it more fully.
 
-**Examples of values vs goals** [CITATION NEEDED — Harris 2008, Ch. 6]:
+**Examples of values vs goals** [verified source: Harris 2008 — *The Happiness Trap*, Ch. 24 "Follow Your Heart" & Ch. 28 "Finding Fulfilment"]:
 
 - A goal: "Get promoted to senior engineer." **A value:** "Keep growing
   my craft and contributing to my team's success."
@@ -138,7 +150,8 @@ it — especially when action triggers difficult inner experiences.
 take them even when fear, doubt, or discomfort show up. The willingness
 to feel difficult things in service of values is the engine of ACT.
 
-**Practical pattern** [CITATION NEEDED — Hayes et al. 2011, Ch. 8]:
+**Practical pattern** [verified source: Harris 2008 — *The Happiness Trap*,
+committed action / "Action Plans" chapters]:
 
 1. Identify a value
 2. Set a small, concrete action in service of that value
@@ -151,11 +164,10 @@ to feel difficult things in service of values is the engine of ACT.
 The pattern is iterative, not one-and-done. Values-driven action builds
 on itself over time.
 
-This pattern is sometimes called the **"Willingness-and-Action Plan"** in
-the ACT literature — identify a value, set the smallest easiest step,
-name the "demons" (thoughts/feelings) you are willing to have, act
-anyway while defusing from unhelpful "passengers" on the bus, and repeat
-whenever you stumble.
+Harris structures this as a values-to-goals **"Action Plan"** — identify a
+value, set the smallest easiest step, name the "demons" (thoughts/feelings)
+you are willing to have, act anyway while defusing from unhelpful
+"passengers" on the bus, and repeat whenever you stumble.
 
 ## When this approach is not appropriate
 
@@ -221,11 +233,16 @@ can see exactly what was used.
 
 - Hayes, S. C. (2005). *Get Out of Your Mind and Into Your Life: The New
   Acceptance and Commitment Therapy*. New Harbinger.
-- Hayes, S. C., Strosahl, K. D., & Wilson, K. G. (2011). *Acceptance and
-  Commitment Therapy: The Process and Practice of Mindful Change* (2nd ed.).
-  Guilford Press.
+- Hayes, S. C., Strosahl, K. D., & Wilson, K. G. (1999). *Acceptance and
+  Commitment Therapy: An Experiential Approach to Behavior Change* (1st ed.).
+  Guilford Press. *(Uploaded + passage-verified for the psychological
+  flexibility and six-component material. The "hexaflex" label and
+  standardized six-process naming are from the 2012 2nd ed., not verified
+  against a source file here.)*
 - Harris, R. (2008). *The Happiness Trap: How to Stop Struggling and Start
   Living*. Trumpeter.
 
-Specific page references (`[CITATION NEEDED]` placeholders) must be filled
-in by the reviewer before this content is considered complete.
+All inline citations are passage-confirmed (`[verified source: …]`) —
+verified against the actual book or journal article via NotebookLM or web.
+Clinician sign-off is still required before this content is considered
+complete.

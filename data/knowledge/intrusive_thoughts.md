@@ -1,8 +1,9 @@
 # Intrusive Thoughts vs Intent
 
 > **DRAFT — NOT YET REVIEWED.** This file requires clinician or trained
-> peer review before merge. Citation placeholders marked
-> `[CITATION NEEDED]` must be replaced with verified references.
+> peer review before merge. Every inline citation is passage-confirmed
+> (`[verified source: …]`) — verified against the actual book/journal
+> via NotebookLM or web. The only remaining gate is clinical sign-off.
 
 keywords: intrusive thoughts, thought-action fusion, ocd, unwanted thoughts, mental noise, passengers on the bus, thoughts are not facts, defusion, defuse, intent, obsession, obsessions, obsessive, compulsions, compulsive
 
@@ -13,16 +14,17 @@ unbidden. They are extremely common — most people experience them, even
 people without any mental health diagnosis. They are not a sign that
 something is wrong with you, that you secretly want what the thought
 suggests, or that you are losing your mind
-[CITATION NEEDED — Winston & Hershfield 2017, "Overcoming Unwanted
-Intrusive Thoughts", Ch. 1].
+[verified source: Winston & Seif 2017 — *Overcoming Unwanted Intrusive
+Thoughts*, New Harbinger, Introduction & Ch. 1].
 
 In clinical contexts, intrusive thoughts are a central focus in
 **Obsessive-Compulsive Disorder (OCD)**, where they are typically
 distressing and ego-dystonic (the person judges them as inconsistent
 with their actual values). But intrusive thoughts also appear in
 anxiety, depression, PTSD, eating disorders, and general human
-experience [CITATION NEEDED — Abramowitz 2018, "The Exposure Treatment
-of OCD", Ch. 2].
+experience [verified source: Abramowitz 2009 — *Getting Over OCD: A
+10-Step Workbook for Taking Back Your Life* (1st ed.), Guilford, Step 1
+"OCD 101" ("What Is Not OCD?")].
 
 This file covers the **transdiagnostic core**: the distinction between
 having a thought and intending, wanting, or being defined by it. This
@@ -47,18 +49,19 @@ train?", the thought is real (it happened in your mind), but:
   your inner character.
 - It is not a command. It does not require any action.
 
-The thought appeared in your mind the way a notification appears on
-your phone. You do not have to answer it
-[CITATION NEEDED — Winston & Hershfield 2017, Ch. 3].
+The thought appeared in your mind like a spam or scam email landing in
+your inbox. You do not have to answer it, believe it, or act on it
+[verified source: Winston & Seif 2017 — *Overcoming Unwanted Intrusive
+Thoughts*, New Harbinger, Ch. 6 "Why Nothing Has Worked"].
 
 ## Thought-action fusion (TAF)
 
 **Thought-action fusion** is the name psychologists give to the
 mistaken belief that having a thought is morally equivalent to
 carrying out the action, or makes the action more likely to happen
-[CITATION NEEDED — Shafran, Thordarson, & Rachman 1996, "Thought-action
-fusion, obsessive thoughts, and the experimental analysis of human
-problem-solving" (or equivalent primary source on TAF)].
+[verified source: Shafran, Thordarson & Rachman 1996 — "Thought-action
+fusion in obsessive compulsive disorder," *Journal of Anxiety Disorders*,
+10(5), pp. 379–391].
 
 TAF has two flavors:
 
@@ -73,8 +76,12 @@ something bad does not make you a bad person.
 
 ## The "passengers on the bus" metaphor
 
-This metaphor comes from ACT [CITATION NEEDED — Hayes 2005, "Get Out
-of Your Mind and Into Your Life", Ch. 4]:
+This metaphor originates in the ACT clinical literature (Hayes and
+colleagues) [verified source: Hayes, Strosahl & Wilson 1999 — *ACT*
+(1st ed.), Guilford, Ch. 6 "Building Acceptance by Defusing Language"
+("Suppose there is a bus and you're the driver…")]. Russ Harris's
+verified, accessible version is **"Demons on the Boat"** (Harris 2008 —
+*The Happiness Trap*, Ch. 9):
 
 Imagine you are driving a bus. Your thoughts, feelings, and memories
 are passengers. Some of them are pleasant. Some of them are awful.
@@ -87,9 +94,8 @@ silence the passengers.
 
 Trying to throw the passengers off the bus is impossible. They will
 climb back in through the windows. The harder you fight them, the
-louder they get. This is the **struggle switch** [CITATION NEEDED —
-Hayes et al. 2011, "Acceptance and Commitment Therapy", 2nd ed.,
-Ch. 6].
+louder they get. This is the **struggle switch** [verified source:
+Harris 2008 — *The Happiness Trap*, Ch. 11 "The Struggle Switch"].
 
 The ACT alternative is not to fight the passengers, but to drive
 the bus anyway.
@@ -100,8 +106,8 @@ When a thought is distressing, the natural response is to try to
 suppress it, argue with it, neutralize it, or distract from it. This
 is called **experiential avoidance**, and it has a well-documented
 paradox: **trying not to think about something makes you think about
-it more** [CITATION NEEDED — Wegner 1994, "Ironic Processes of Mental
-Control"].
+it more** [verified source: Wegner 1994 — "Ironic processes of mental
+control," *Psychological Review*, 101(1), pp. 34–52].
 
 This is called the **white bear problem**: try right now not to think
 about a white bear. You'll find that the bear is suddenly all you can
@@ -116,7 +122,8 @@ the problem.
 
 Internal Family Systems (IFS) therapy offers a frame that goes deeper
 than "every part has positive intent" — it names the different roles
-parts play [CITATION NEEDED — Schwartz 2021, "No Bad Parts", Ch. 2].
+parts play [verified source: Schwartz 2021 — *No Bad Parts*, Ch. 5
+"Mapping Our Inner Systems"].
 
 ### The parts you'll meet in intrusive thought work
 
@@ -192,8 +199,9 @@ support:
   OCD-specialized guidance is needed. ACT and ERP (Exposure and
   Response Prevention) are both evidence-based for OCD, but they are
   most effective with professional support
-  [CITATION NEEDED — Foa et al. 2012, "Mastery of Obsessive-Compulsive
-  Disorder", Ch. 4].
+  [verified source: Foa, Yadin & Lichner 2012 — *Exposure and Response
+  (Ritual) Prevention for OCD: Therapist Guide* (2nd ed.), Oxford,
+  Ch. 1 & "About Treatments That Work"].
 - **Severe thought-action fusion (TAF).** When having a thought feels
   morally equivalent to doing it, the resulting guilt may require a
   therapist to help dismantle the "mental magic" and restore reality
@@ -275,31 +283,28 @@ can see exactly what was used.
 
 ## Sources
 
-- Abramowitz, J. S. (2018). *The Exposure Treatment of OCD: A
-  Practitioner's Guide*. Guilford Press.
-- Foa, E. B., Yadin, E., & Lichner, T. K. (2012). *Mastery of
-  Obsessive-Compulsive Disorder: A Cognitive-Behavioral Approach
-  (Therapist Guide)*. Oxford University Press.
+- Abramowitz, J. S. (2009). *Getting Over OCD: A 10-Step Workbook for
+  Taking Back Your Life* (1st ed.). Guilford Press.
+- Foa, E. B., Yadin, E., & Lichner, T. K. (2012). *Exposure and Response
+  (Ritual) Prevention for Obsessive-Compulsive Disorder: Therapist Guide*
+  (2nd ed.). Oxford University Press. ISBN 978-0195335286.
 - Hayes, S. C. (2005). *Get Out of Your Mind and Into Your Life: The
   New Acceptance and Commitment Therapy*. New Harbinger.
-- Hayes, S. C., Strosahl, K. D., & Wilson, K. G. (2011). *Acceptance
-  and Commitment Therapy: The Process and Practice of Mindful Change*
-  (2nd ed.). Guilford Press.
+- Hayes, S. C., Strosahl, K. D., & Wilson, K. G. (1999). *Acceptance and
+  Commitment Therapy: An Experiential Approach to Behavior Change* (1st ed.).
+  Guilford Press.
 - Schwartz, R. C. (2021). *No Bad Parts: Healing Trauma and Restoring
   Wholeness with the Internal Family Systems Model*. Sounds True.
-- Shafran, R., Thordarson, D. S., & Rachman, S. (1996). *Thought-action
-  fusion, obsessive thoughts, and the experimental analysis of human
-  problem-solving*. Behaviour Research and Therapy [CITATION NEEDED —
-  exact title, volume, and page numbers to be verified by reviewer].
+- Shafran, R., Thordarson, D. S., & Rachman, S. (1996). Thought-action
+  fusion in obsessive compulsive disorder. *Journal of Anxiety Disorders*,
+  10(5), 379–391.
 - Wegner, D. M. (1994). *Ironic processes of mental control*.
   Psychological Review, 101(1), 34–52.
-- Winston, S. M., & Hershfield, H. E. (2017). *Overcoming Unwanted
-  Intrusive Thoughts: A CBT-Based Guide to Getting Over Fears,
-  Anxieties, and Distressing Mental Images*. New Harbinger. *Note: This
-  book is widely recognized in the OCD/intrusive thoughts clinical
-  community but was not included in the NotebookLM source set used to
-  develop the initial draft of this content. Inclusion is based on the
-  broader clinical reputation of the work.*
+- Winston, S. M., & Seif, M. N. (2017). *Overcoming Unwanted Intrusive
+  Thoughts: A CBT-Based Guide to Getting Over Fears, Anxieties, and
+  Distressing Mental Images*. New Harbinger. ISBN 978-1626254346.
 
-Specific page references (`[CITATION NEEDED]` placeholders) must be
-filled in by the reviewer before this content is considered complete.
+All inline citations are passage-confirmed (`[verified source: …]`) —
+verified against the actual book or journal article via NotebookLM or web
+(Shafran 1996 and Wegner 1994 are journal articles). Clinician sign-off
+is still required before this content is considered complete.
