@@ -16,8 +16,11 @@ from stillpoint.config import get_notebooklm_bin, load_config
 
 logger = logging.getLogger(__name__)
 
-_MAX_RETRIES = 3
-_TIMEOUT_SECONDS = 60
+# Keep the worst case bounded: a hung notebook must not stall a chat
+# reply for minutes. 2 attempts × 20 s = at most 40 s per notebook
+# (previously 3 × 60 s = 3 minutes).
+_MAX_RETRIES = 2
+_TIMEOUT_SECONDS = 20
 
 
 def _notebooklm_bin() -> str:

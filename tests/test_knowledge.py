@@ -83,7 +83,7 @@ def test_ask_notebook_nonzero_returncode_retries_and_returns_ungrounded(monkeypa
     monkeypatch.setattr(knowledge.subprocess, "run", fake_run)
     result = _ask_notebook("nb-123", "question")
     assert result == "[UNGROUNDED]"
-    assert call_count["n"] == 3  # retried _MAX_RETRIES times
+    assert call_count["n"] == knowledge._MAX_RETRIES
 
 
 def test_ask_notebook_timeout_retries_and_returns_ungrounded(monkeypatch):
@@ -97,7 +97,7 @@ def test_ask_notebook_timeout_retries_and_returns_ungrounded(monkeypatch):
     monkeypatch.setattr(knowledge.subprocess, "run", fake_run)
     result = _ask_notebook("nb-123", "question")
     assert result == "[UNGROUNDED]"
-    assert call_count["n"] == 3
+    assert call_count["n"] == knowledge._MAX_RETRIES
 
 
 def test_ask_notebook_succeeds_on_second_attempt(monkeypatch):
