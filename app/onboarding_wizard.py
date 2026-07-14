@@ -23,6 +23,42 @@ from stillpoint.onboarding import (
 )
 
 
+def _merge_update(updates, component, **kwargs):
+    """Merge kwargs into an existing update dict for ``component``.
+
+    A plain ``updates[component] = gr.update(...)`` after
+    ``updates.update(render_updates)`` would *replace* the render
+    update and drop its visibility/placeholder changes (and vice
+    versa) — this was the cause of stale answer text carrying over
+    between questions.
+    """
+    existing = updates.get(component)
+    if isinstance(existing, dict):
+        existing.update(kwargs)
+    else:
+        updates[component] = gr.update(**kwargs)
+    return updates
+
+
+def _match_choice(answer, choices):
+    """Return the canonical choice for the user's text, or None.
+
+    Accepts an exact case-insensitive match or a unique
+    case-insensitive substring match, matching the input
+    placeholder ("Type your choice (or part of it)...").
+    """
+    text = (answer or "").strip().lower()
+    if not text:
+        return None
+    for choice in choices:
+        if choice.lower() == text:
+            return choice
+    matches = [choice for choice in choices if text in choice.lower()]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
 def build_onboarding_view() -> tuple:
     """Build the onboarding wizard view.
 
@@ -35,28 +71,58 @@ def build_onboarding_view() -> tuple:
     current_phase = gr.State(value=PHASES[0])
     question_idx = gr.State(value=0)
 
+    # First question of the first phase, resolved at build time so the
+    # user sees it immediately (the display previously started empty and
+    # question 0 was silently skipped on the first Next click).
+    _first_q = get_phase_questions(PHASES[0])[0]
+    _first_q_type = _first_q.get("type", "text")
+
+    # All multiselect choices, baked in at build time. Updating
+    # ``choices`` on a hidden CheckboxGroup is unreliable across Gradio
+    # frontend versions (observed broken on 6.14: the choices update is
+    # dropped and the group renders empty). The choices are static, so
+    # bake them in and only toggle visibility at runtime.
+    _multiselect_choices = [
+        choice
+        for _phase in PHASES
+        for _q in get_phase_questions(_phase)
+        if _q.get("type") == "multiselect"
+        for choice in _q.get("choices", [])
+    ]
+
     # --- Header ---
     gr.Markdown("# 🧘 Stillpoint Setup")
     progress_text = gr.Markdown(value=f"Step 1 of {len(PHASES)}: Welcome")
 
     # --- Question display area ---
-    question_display = gr.Markdown(value="", elem_classes=["contain"])
-    answer_input = gr.Textbox(
-        label="Your answer",
-        placeholder="Type your answer here...",
-        visible=True,
-        lines=2,
+    question_display = gr.Markdown(
+        value=_first_q.get("question", ""), elem_classes=["contain"]
     )
+
+    # The Textbox and CheckboxGroup are wrapped in Columns and shown/
+    # hidden via the Column, never via the component itself. Gradio
+    # groups adjacent form inputs in a shared Form wrapper, and (observed
+    # on 6.14) inputs created with visible=False never mount, so later
+    # visible=True updates on them are silently dropped. Column
+    # visibility toggling is reliable.
+    with gr.Column(
+        visible=_first_q_type in ("text", "textarea", "choice")
+    ) as answer_text_col:
+        answer_input = gr.Textbox(
+            label="Your answer",
+            placeholder="Type your answer here...",
+            lines=2,
+        )
 
     # For multiselect (checkboxes) - hidden by default
-    answer_checkboxes = gr.CheckboxGroup(
-        label="Select all that apply",
-        choices=[],
-        visible=False,
-    )
+    with gr.Column(visible=_first_q_type == "multiselect") as answer_cb_col:
+        answer_checkboxes = gr.CheckboxGroup(
+            label="Select all that apply",
+            choices=_multiselect_choices,
+        )
 
     # For confirm buttons
-    confirm_btn = gr.Button("Yes / Confirm", visible=False)
+    confirm_btn = gr.Button("Yes / Confirm", visible=_first_q_type == "confirm")
     skip_btn = gr.Button("Skip this question", visible=False)
 
     # Navigation
@@ -115,41 +181,43 @@ def build_onboarding_view() -> tuple:
             status_msg: gr.update(value=""),
         }
 
-        # Show appropriate input type
+        # Show appropriate input type (visibility is toggled on the
+        # wrapper Columns — see the component definitions above)
         if q_type == "info":
-            updates[answer_input] = gr.update(visible=False)
-            updates[answer_checkboxes] = gr.update(visible=False)
+            updates[answer_text_col] = gr.update(visible=False)
+            updates[answer_cb_col] = gr.update(visible=False)
             updates[confirm_btn] = gr.update(visible=False)
             updates[skip_btn] = gr.update(visible=False)
         elif q_type == "multiselect":
-            updates[answer_input] = gr.update(visible=False)
-            updates[answer_checkboxes] = gr.update(
-                visible=True, choices=q.get("choices", [])
-            )
+            updates[answer_text_col] = gr.update(visible=False)
+            # choices are baked in at build time (see _multiselect_choices)
+            updates[answer_cb_col] = gr.update(visible=True)
             updates[confirm_btn] = gr.update(visible=False)
             updates[skip_btn] = gr.update(visible=not q.get("required", False))
         elif q_type == "choice":
+            updates[answer_text_col] = gr.update(visible=True)
             updates[answer_input] = gr.update(
-                visible=True,
                 lines=1,
                 placeholder="Type your choice (or part of it)...",
             )
-            updates[answer_checkboxes] = gr.update(visible=False)
+            updates[answer_cb_col] = gr.update(visible=False)
             updates[confirm_btn] = gr.update(visible=False)
             updates[skip_btn] = gr.update(visible=not q.get("required", False))
         elif q_type == "confirm":
-            updates[answer_input] = gr.update(visible=False)
-            updates[answer_checkboxes] = gr.update(visible=False)
+            updates[answer_text_col] = gr.update(visible=False)
+            updates[answer_cb_col] = gr.update(visible=False)
             updates[confirm_btn] = gr.update(visible=True)
             updates[skip_btn] = gr.update(visible=False)
         elif q_type == "textarea":
-            updates[answer_input] = gr.update(visible=True, lines=4, placeholder="")
-            updates[answer_checkboxes] = gr.update(visible=False)
+            updates[answer_text_col] = gr.update(visible=True)
+            updates[answer_input] = gr.update(lines=4, placeholder="")
+            updates[answer_cb_col] = gr.update(visible=False)
             updates[confirm_btn] = gr.update(visible=False)
             updates[skip_btn] = gr.update(visible=not q.get("required", False))
         else:  # text
-            updates[answer_input] = gr.update(visible=True, lines=1, placeholder="")
-            updates[answer_checkboxes] = gr.update(visible=False)
+            updates[answer_text_col] = gr.update(visible=True)
+            updates[answer_input] = gr.update(lines=1, placeholder="")
+            updates[answer_cb_col] = gr.update(visible=False)
             updates[confirm_btn] = gr.update(visible=False)
             updates[skip_btn] = gr.update(visible=not q.get("required", False))
 
@@ -190,8 +258,8 @@ def build_onboarding_view() -> tuple:
         return {
             progress_text: gr.update(value="One last thing..."),
             question_display: gr.update(visible=False),
-            answer_input: gr.update(visible=False),
-            answer_checkboxes: gr.update(visible=False),
+            answer_text_col: gr.update(visible=False),
+            answer_cb_col: gr.update(visible=False),
             confirm_btn: gr.update(visible=False),
             skip_btn: gr.update(visible=False),
             next_btn: gr.update(visible=False),
@@ -260,9 +328,10 @@ def build_onboarding_view() -> tuple:
                 show_setup_later = False
             return {
                 progress_text: gr.update(value="✅ Setup Complete!"),
-                question_display: gr.update(value=completion_text),
-                answer_input: gr.update(visible=False),
-                answer_checkboxes: gr.update(visible=False),
+                question_display: gr.update(value=completion_text, visible=True),
+                picker_col: gr.update(visible=False),
+                answer_text_col: gr.update(visible=False),
+                answer_cb_col: gr.update(visible=False),
                 confirm_btn: gr.update(visible=False),
                 skip_btn: gr.update(visible=False),
                 next_btn: gr.update(visible=False),
@@ -301,9 +370,27 @@ def build_onboarding_view() -> tuple:
         if q_type == "multiselect":
             answer = checkbox_vals if checkbox_vals else []
         elif q_type == "confirm":
-            answer = True
+            # Confirm questions (e.g. consent) must be answered with the
+            # Yes/Confirm button — Next used to silently record True.
+            return {
+                status_msg: gr.update(
+                    value="⚠️ Please click **Yes / Confirm** to continue."
+                )
+            }
         elif q_type == "info":
             answer = "acknowledged"
+        elif q_type == "choice":
+            matched = _match_choice(answer_text, q.get("choices", []))
+            if matched is None:
+                if q.get("required") or (answer_text or "").strip():
+                    options = ", ".join(q.get("choices", []))
+                    return {
+                        status_msg: gr.update(
+                            value=f"⚠️ Please choose one of: {options}"
+                        )
+                    }
+                matched = ""
+            answer = matched
 
         # Validate required questions
         if q.get("required") and not answer:
@@ -323,19 +410,18 @@ def build_onboarding_view() -> tuple:
             updates = {
                 question_idx: next_idx,
                 state: onboarding_state,
-                answer_input: gr.update(value=""),
-                answer_checkboxes: gr.update(value=[]),
             }
-            render_updates = render_question(phase, next_idx, onboarding_state)
-            updates.update(render_updates)
+            updates.update(render_question(phase, next_idx, onboarding_state))
+            _merge_update(updates, answer_input, value="")
+            _merge_update(updates, answer_checkboxes, value=[])
             return updates
         else:
             # Phase complete — check if can advance
             if is_phase_complete(phase, onboarding_state):
                 updates = _advance_phase(phase, onboarding_state)
                 updates[state] = onboarding_state
-                updates[answer_input] = gr.update(value="")
-                updates[answer_checkboxes] = gr.update(value=[])
+                _merge_update(updates, answer_input, value="")
+                _merge_update(updates, answer_checkboxes, value=[])
                 return updates
             else:
                 return {
@@ -360,15 +446,17 @@ def build_onboarding_view() -> tuple:
             updates = {
                 question_idx: next_idx,
                 state: onboarding_state,
-                answer_input: gr.update(value=""),
             }
-            render_updates = render_question(phase, next_idx, onboarding_state)
-            updates.update(render_updates)
+            updates.update(render_question(phase, next_idx, onboarding_state))
+            _merge_update(updates, answer_input, value="")
+            _merge_update(updates, answer_checkboxes, value=[])
             return updates
         else:
             if is_phase_complete(phase, onboarding_state):
                 updates = _advance_phase(phase, onboarding_state)
                 updates[state] = onboarding_state
+                _merge_update(updates, answer_input, value="")
+                _merge_update(updates, answer_checkboxes, value=[])
                 return updates
             else:
                 return {
@@ -428,13 +516,16 @@ def build_onboarding_view() -> tuple:
                 question_idx: next_idx,
                 state: onboarding_state,
             }
-            render_updates = render_question(phase, next_idx, onboarding_state)
-            updates.update(render_updates)
+            updates.update(render_question(phase, next_idx, onboarding_state))
+            _merge_update(updates, answer_input, value="")
+            _merge_update(updates, answer_checkboxes, value=[])
             return updates
         else:
             if is_phase_complete(phase, onboarding_state):
                 updates = _advance_phase(phase, onboarding_state)
                 updates[state] = onboarding_state
+                _merge_update(updates, answer_input, value="")
+                _merge_update(updates, answer_checkboxes, value=[])
                 return updates
             else:
                 return {
@@ -443,48 +534,41 @@ def build_onboarding_view() -> tuple:
                 }
 
     # --- Wire up events ---
+    # One shared outputs list: every component any handler may return.
+    # ``picker_col`` and ``setup_later_btn`` were previously missing,
+    # so completing the final phase raised "Returned component ...
+    # not specified as output of function" and the wizard could never
+    # finish.
+    wizard_outputs = [
+        question_display, answer_input, answer_checkboxes,
+        answer_text_col, answer_cb_col,
+        confirm_btn, skip_btn, next_btn, back_btn,
+        done_btn, setup_later_btn, picker_col, progress_text, status_msg,
+        current_phase, question_idx, state,
+    ]
+
     next_btn.click(
         fn=on_next,
         inputs=[answer_input, answer_checkboxes, current_phase, question_idx, state],
-        outputs=[
-            question_display, answer_input, answer_checkboxes,
-            confirm_btn, skip_btn, next_btn, back_btn,
-            done_btn, progress_text, status_msg,
-            current_phase, question_idx, state,
-        ],
+        outputs=wizard_outputs,
     )
 
     skip_btn.click(
         fn=on_skip,
         inputs=[current_phase, question_idx, state],
-        outputs=[
-            question_display, answer_input, answer_checkboxes,
-            confirm_btn, skip_btn, next_btn, back_btn,
-            done_btn, progress_text, status_msg,
-            current_phase, question_idx, state,
-        ],
+        outputs=wizard_outputs,
     )
 
     back_btn.click(
         fn=on_back,
         inputs=[current_phase, question_idx, state],
-        outputs=[
-            question_display, answer_input, answer_checkboxes,
-            confirm_btn, skip_btn, next_btn, back_btn,
-            done_btn, progress_text, status_msg,
-            current_phase, question_idx, state,
-        ],
+        outputs=wizard_outputs,
     )
 
     confirm_btn.click(
         fn=on_confirm,
         inputs=[current_phase, question_idx, state],
-        outputs=[
-            question_display, answer_input, answer_checkboxes,
-            confirm_btn, skip_btn, next_btn, back_btn,
-            done_btn, progress_text, status_msg,
-            current_phase, question_idx, state,
-        ],
+        outputs=wizard_outputs,
     )
 
     # Picker button click handlers (PR 2, Fix 4). Each button sets
@@ -494,8 +578,9 @@ def build_onboarding_view() -> tuple:
     # buttons + state).
     picker_outputs = [
         question_display, answer_input, answer_checkboxes,
+        answer_text_col, answer_cb_col,
         confirm_btn, skip_btn, next_btn, back_btn,
-        done_btn, setup_later_btn, progress_text, status_msg,
+        done_btn, setup_later_btn, picker_col, progress_text, status_msg,
         state,
     ]
     concrete_btn.click(

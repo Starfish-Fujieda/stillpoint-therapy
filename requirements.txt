@@ -2,7 +2,7 @@
 # Install: pip install -r requirements.txt
 
 # Core
-gradio>=4.0
+gradio>=6.20  # 6.14 frontend drops visibility updates on hidden components
 chromadb>=1.5.0
 mempalace>=3.3.5
 pyyaml>=6.0

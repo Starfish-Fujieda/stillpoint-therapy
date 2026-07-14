@@ -132,7 +132,13 @@ def main():
         server_port=7860,
         show_error=True,
         theme=gr.themes.Soft(),
-        css=".contain { max-width: 900px; margin: auto; padding: 20px; }",
+        # Center the app; the previous css only styled .contain (the
+        # question display), leaving the page column uncentered.
+        css=(
+            ".gradio-container { max-width: 900px !important; "
+            "margin: 0 auto !important; } "
+            ".contain { max-width: 900px; margin: auto; padding: 20px; }"
+        ),
     )
 
 
