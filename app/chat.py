@@ -15,6 +15,7 @@ import gradio as gr
 
 from stillpoint import knowledge
 from stillpoint.config import load_config
+from stillpoint.llm import deepseek_peak_warning
 from stillpoint.memory import get_session_count
 from stillpoint.session import SessionEngine
 
@@ -74,6 +75,16 @@ def build_chat_view():
     gr.Markdown(
         value=_api_key_status(),
         visible=bool(_api_key_status()),
+    )
+
+    # --- DeepSeek peak-hour cost banner ---
+    # DeepSeek bills 2x during 09:00–12:00 / 14:00–18:00 Beijing time.
+    # Shown when the configured provider is deepseek AND the current
+    # time is inside a peak window; refreshed on every send so the
+    # banner appears/disappears as sessions cross a window boundary.
+    peak_notice = gr.Markdown(
+        value=deepseek_peak_warning(),
+        visible=bool(deepseek_peak_warning()),
     )
 
     # --- Header ---
@@ -140,10 +151,15 @@ def build_chat_view():
             "",
         )
 
+    def _peak_notice_update():
+        """Refresh the DeepSeek peak-hour banner."""
+        warning = deepseek_peak_warning()
+        return gr.update(value=warning, visible=bool(warning))
+
     def send_message(message, history):
         """Send a user message and get the therapist response."""
         if not message or not message.strip():
-            return history, "", _get_status_text()
+            return history, "", _get_status_text(), _peak_notice_update()
 
         engine = _get_engine()
 
@@ -161,7 +177,7 @@ def build_chat_view():
             error_msg = f"I'm sorry, something went wrong. Please try again. (Error: {e})"
             history = history + [(message.strip(), error_msg)]
 
-        return history, "", _get_status_text()
+        return history, "", _get_status_text(), _peak_notice_update()
 
     def end_session(history):
         """End the current session."""
@@ -184,7 +200,7 @@ def build_chat_view():
     send_btn.click(
         fn=send_message,
         inputs=[msg_input, chatbot],
-        outputs=[chatbot, msg_input, status_display],
+        outputs=[chatbot, msg_input, status_display, peak_notice],
     ).then(
         fn=lambda: gr.update(autofocus=True),
         outputs=[msg_input],
@@ -194,7 +210,7 @@ def build_chat_view():
     msg_input.submit(
         fn=send_message,
         inputs=[msg_input, chatbot],
-        outputs=[chatbot, msg_input, status_display],
+        outputs=[chatbot, msg_input, status_display, peak_notice],
     )
 
     # End session

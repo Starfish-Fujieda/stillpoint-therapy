@@ -229,3 +229,243 @@ def test_is_phase_complete_unknown_phase_returns_false():
     """Unknown phase names return False (defensive default)."""
     from stillpoint.onboarding import is_phase_complete
     assert is_phase_complete("nonexistent", {}) is False
+
+
+# ---------------------------------------------------------------------------
+# build_llm_config — provider mapping
+# ---------------------------------------------------------------------------
+
+def _llm_state(provider_answer):
+    return {"infrastructure": {"llm_provider": provider_answer}}
+
+
+def test_build_llm_config_anthropic():
+    from stillpoint.onboarding import build_llm_config
+    cfg = build_llm_config(_llm_state("Anthropic (Claude)"))
+    assert cfg["provider"] == "anthropic"
+    assert cfg["api_key_env"] == "ANTHROPIC_API_KEY"
+
+
+def test_build_llm_config_openai():
+    from stillpoint.onboarding import build_llm_config
+    cfg = build_llm_config(_llm_state("OpenAI (GPT-4)"))
+    assert cfg["provider"] == "openai"
+    assert cfg["api_key_env"] == "OPENAI_API_KEY"
+
+
+def test_build_llm_config_google():
+    from stillpoint.onboarding import build_llm_config
+    assert build_llm_config(_llm_state("Google (Gemini)"))["provider"] == "google"
+
+
+def test_build_llm_config_openrouter_has_base_url():
+    from stillpoint.onboarding import build_llm_config
+    cfg = build_llm_config(_llm_state("OpenRouter"))
+    assert cfg["provider"] == "openrouter"
+    assert cfg["base_url"].startswith("https://openrouter.ai")
+
+
+def test_build_llm_config_ollama_needs_no_key():
+    from stillpoint.onboarding import build_llm_config
+    cfg = build_llm_config(_llm_state("Ollama (local)"))
+    assert cfg["provider"] == "ollama"
+    assert "api_key_env" not in cfg
+
+
+def test_build_llm_config_minimax_thinking_off_by_default():
+    from stillpoint.onboarding import build_llm_config
+    cfg = build_llm_config(_llm_state("MiniMax (M3)"))
+    assert cfg["provider"] == "minimax"
+    assert cfg["show_thinking"] is False
+
+
+def test_build_llm_config_defaults_to_anthropic():
+    from stillpoint.onboarding import build_llm_config
+    assert build_llm_config({})["provider"] == "anthropic"
+
+
+# ---------------------------------------------------------------------------
+# build_processing_style — answer mapping
+# ---------------------------------------------------------------------------
+
+def test_processing_style_direct():
+    from stillpoint.onboarding import build_processing_style
+    ps = build_processing_style(
+        {"processing_style": {"communication_preference": "Direct and straightforward"}}
+    )
+    assert ps["communication_preference"] == "direct"
+
+
+def test_processing_style_gentle():
+    from stillpoint.onboarding import build_processing_style
+    ps = build_processing_style(
+        {"processing_style": {"communication_preference": "Gentle and indirect"}}
+    )
+    assert ps["communication_preference"] == "gentle"
+
+
+def test_processing_style_defaults_to_mixed():
+    from stillpoint.onboarding import build_processing_style
+    assert build_processing_style({})["communication_preference"] == "mixed"
+
+
+def test_processing_style_alexithymia_and_intellectualizing():
+    from stillpoint.onboarding import build_processing_style
+    ps = build_processing_style({
+        "processing_style": {
+            "alexithymia": "Mostly cognitive",
+            "intellectualizing": "Sometimes",
+        }
+    })
+    assert ps["alexithymia_adapted"] is True
+    assert ps["intellectualizing_redirects"] is True
+
+
+# ---------------------------------------------------------------------------
+# recommend_notebooks — required notebooks + specialization mapping
+# ---------------------------------------------------------------------------
+
+def _write_real_source_library(project_root):
+    """Copy the real source library so topic keys match production."""
+    import shutil
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parent.parent
+    shutil.copy(
+        repo_root / "templates" / "source_library.yaml",
+        project_root / "templates" / "source_library.yaml",
+    )
+
+
+def test_recommend_notebooks_always_includes_required(project_root):
+    from stillpoint.onboarding import recommend_notebooks
+    _write_real_source_library(project_root)
+    notebooks = recommend_notebooks({})
+    required = [nb["topic_key"] for nb in notebooks if nb["required"]]
+    assert "core_therapy_techniques" in required
+    assert "self_compassion_shame" in required
+
+
+def test_recommend_notebooks_maps_specializations(project_root):
+    from stillpoint.onboarding import recommend_notebooks
+    _write_real_source_library(project_root)
+    state = {"character_design": {"specializations": ["Anxiety & OCD"]}}
+    keys = [nb["topic_key"] for nb in recommend_notebooks(state)]
+    assert "anxiety_ocd" in keys
+
+
+def test_recommend_notebooks_ignores_unknown_labels(project_root):
+    from stillpoint.onboarding import recommend_notebooks
+    _write_real_source_library(project_root)
+    state = {"character_design": {"specializations": ["Not A Real Label"]}}
+    keys = [nb["topic_key"] for nb in recommend_notebooks(state)]
+    assert len(keys) == 2  # required only
+
+
+def test_recommend_notebooks_have_empty_ids_for_later_setup(project_root):
+    from stillpoint.onboarding import recommend_notebooks
+    _write_real_source_library(project_root)
+    assert all(nb["notebook_id"] == "" for nb in recommend_notebooks({}))
+
+
+# ---------------------------------------------------------------------------
+# generate_all_config — end to end config generation
+# ---------------------------------------------------------------------------
+
+def _full_state():
+    return {
+        "user_name": "Rich",
+        "welcome": {"consent": True, "user_name": "Rich"},
+        "character_design": {
+            "name": "Aiko",
+            "directness": "Balanced",
+            "structure": "Mixed",
+            "humor": "Occasionally, when appropriate",
+            "specializations": ["Anxiety & OCD"],
+            "description": "",
+        },
+        "infrastructure": {
+            "llm_provider": "Anthropic (Claude)",
+            "api_key_set": True,
+        },
+        "notebooks_confirmed": {"confirm_notebooks": True},
+        "processing_style": {
+            "communication_preference": "It varies — read the room"
+        },
+    }
+
+
+def _copy_templates(project_root):
+    import shutil
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parent.parent
+    shutil.copytree(
+        repo_root / "templates", project_root / "templates", dirs_exist_ok=True
+    )
+
+
+def test_generate_all_config_writes_all_files(project_root):
+    import yaml as _yaml
+
+    from stillpoint.onboarding import generate_all_config
+    _copy_templates(project_root)
+
+    generate_all_config(_full_state())
+
+    for fname in ("therapist.yaml", "user_profile.yaml", "treatment_plan.yaml"):
+        assert (project_root / "config" / fname).exists(), fname
+    assert (project_root / "personas" / "therapist.md").exists()
+
+    therapist = _yaml.safe_load(
+        (project_root / "config" / "therapist.yaml").read_text(encoding="utf-8")
+    )
+    assert therapist["therapist"]["name"] == "Aiko"
+    assert therapist["llm"]["provider"] == "anthropic"
+    assert any(
+        nb["topic_key" if "topic_key" in nb else "topic"]
+        for nb in therapist["therapist"]["notebooks"]
+    )
+
+
+def test_generate_all_config_satisfies_is_configured(project_root):
+    from stillpoint.config import is_configured
+    from stillpoint.onboarding import generate_all_config
+    _copy_templates(project_root)
+    assert is_configured() is False
+    generate_all_config(_full_state())
+    assert is_configured() is True
+
+
+def test_generate_all_config_treatment_plan_has_goals(project_root):
+    import yaml as _yaml
+
+    from stillpoint.onboarding import generate_all_config
+    _copy_templates(project_root)
+    generate_all_config(_full_state())
+    plan = _yaml.safe_load(
+        (project_root / "config" / "treatment_plan.yaml").read_text(encoding="utf-8")
+    )
+    goals = str(plan.get("intake_goals", ""))
+    assert "Anxiety & OCD" in goals
+
+
+def test_build_llm_config_deepseek():
+    from stillpoint.onboarding import build_llm_config
+    cfg = build_llm_config(_llm_state("DeepSeek (V4)"))
+    assert cfg["provider"] == "deepseek"
+    assert cfg["api_key_env"] == "DEEPSEEK_API_KEY"
+    assert cfg["base_url"] == "https://api.deepseek.com"
+
+
+def test_deepseek_is_a_wizard_choice():
+    from stillpoint.onboarding import get_phase_questions
+    q = get_phase_questions("infrastructure")[0]
+    assert "DeepSeek (V4)" in q["choices"]
+    assert "2×" in q["question"] and "peak hours" in q["question"]
+
+
+def test_quick_start_supports_deepseek(monkeypatch):
+    from stillpoint.onboarding import generate_quick_start_config
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    state = generate_quick_start_config("test-key", "DeepSeek (V4)")
+    assert state["infrastructure"]["llm_provider"] == "DeepSeek (V4)"
+    assert os.environ.get("DEEPSEEK_API_KEY") == "test-key"

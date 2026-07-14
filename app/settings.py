@@ -18,7 +18,9 @@ from stillpoint.config import (
 )
 
 # LLM provider options
-_PROVIDERS = ["anthropic", "openai", "google", "ollama", "openrouter", "minimax"]
+_PROVIDERS = [
+    "anthropic", "openai", "google", "ollama", "openrouter", "minimax", "deepseek",
+]
 
 # Default model per provider (best-effort; user can override)
 _DEFAULT_MODELS: dict[str, str] = {
@@ -28,6 +30,7 @@ _DEFAULT_MODELS: dict[str, str] = {
     "ollama": "llama3",
     "openrouter": "anthropic/claude-sonnet-4-5",
     "minimax": "MiniMax-M3",
+    "deepseek": "deepseek-chat",
 }
 
 # Default env var name per provider (best-effort; user can override)
@@ -38,10 +41,11 @@ _DEFAULT_KEY_ENVS: dict[str, str] = {
     "ollama": "",
     "openrouter": "OPENROUTER_API_KEY",
     "minimax": "MINIMAX_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
 }
 
 # Providers that need a configurable base_url (not on api.openai.com etc.)
-_BASE_URL_PROVIDERS = {"ollama", "openrouter", "minimax"}
+_BASE_URL_PROVIDERS = {"ollama", "openrouter", "minimax", "deepseek"}
 
 # Human therapist modality choices (matches the original onboarding
 # question that lived in character_design, moved to Settings in PR 2).

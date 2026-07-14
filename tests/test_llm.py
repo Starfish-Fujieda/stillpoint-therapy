@@ -428,3 +428,94 @@ def test_settings_providers_includes_openrouter_and_minimax():
     # openrouter and minimax both need a base_url override
     assert "openrouter" in _BASE_URL_PROVIDERS
     assert "minimax" in _BASE_URL_PROVIDERS
+
+
+# ---------------------------------------------------------------------------
+# DeepSeek — provider dispatch and peak-hour pricing warning
+# ---------------------------------------------------------------------------
+
+def test_deepseek_peak_hours_morning_window():
+    from datetime import datetime, timedelta, timezone
+
+    from stillpoint.llm import is_deepseek_peak_hours
+    beijing = timezone(timedelta(hours=8))
+    assert is_deepseek_peak_hours(datetime(2026, 7, 20, 9, 0, tzinfo=beijing)) is True
+    assert is_deepseek_peak_hours(datetime(2026, 7, 20, 11, 59, tzinfo=beijing)) is True
+
+
+def test_deepseek_peak_hours_afternoon_window():
+    from datetime import datetime, timedelta, timezone
+
+    from stillpoint.llm import is_deepseek_peak_hours
+    beijing = timezone(timedelta(hours=8))
+    assert is_deepseek_peak_hours(datetime(2026, 7, 20, 14, 0, tzinfo=beijing)) is True
+    assert is_deepseek_peak_hours(datetime(2026, 7, 20, 17, 59, tzinfo=beijing)) is True
+
+
+def test_deepseek_off_peak_hours():
+    from datetime import datetime, timedelta, timezone
+
+    from stillpoint.llm import is_deepseek_peak_hours
+    beijing = timezone(timedelta(hours=8))
+    for hour in (0, 8, 12, 13, 18, 23):
+        assert is_deepseek_peak_hours(
+            datetime(2026, 7, 20, hour, 0, tzinfo=beijing)
+        ) is False, f"hour {hour} Beijing should be off-peak"
+
+
+def test_deepseek_peak_hours_converts_timezones():
+    """10:00 JST (UTC+9) is 09:00 Beijing — inside the morning window."""
+    from datetime import datetime, timedelta, timezone
+
+    from stillpoint.llm import is_deepseek_peak_hours
+    jst = timezone(timedelta(hours=9))
+    assert is_deepseek_peak_hours(datetime(2026, 7, 20, 10, 0, tzinfo=jst)) is True
+    assert is_deepseek_peak_hours(datetime(2026, 7, 20, 9, 0, tzinfo=jst)) is False
+
+
+def test_deepseek_peak_warning_only_for_deepseek(monkeypatch):
+    import stillpoint.llm as llm
+    monkeypatch.setattr(llm, "is_deepseek_peak_hours", lambda now=None: True)
+    assert llm.deepseek_peak_warning({"provider": "anthropic"}) == ""
+    warning = llm.deepseek_peak_warning({"provider": "deepseek"})
+    assert "2×" in warning
+    assert "Beijing" in warning
+
+
+def test_deepseek_peak_warning_empty_off_peak(monkeypatch):
+    import stillpoint.llm as llm
+    monkeypatch.setattr(llm, "is_deepseek_peak_hours", lambda now=None: False)
+    assert llm.deepseek_peak_warning({"provider": "deepseek"}) == ""
+
+
+def test_send_message_dispatches_deepseek(monkeypatch):
+    import stillpoint.llm as llm
+    called = {}
+
+    def fake_send(system_prompt, messages, config):
+        called["config"] = config
+        return "ds reply"
+
+    monkeypatch.setattr(llm, "_send_deepseek", fake_send)
+    result = llm.send_message(
+        "system", [{"role": "user", "content": "hi"}],
+        {"provider": "deepseek", "model": "deepseek-chat"},
+    )
+    assert result == "ds reply"
+    assert called["config"]["model"] == "deepseek-chat"
+
+
+def test_deepseek_missing_api_key_raises(monkeypatch):
+    import pytest as _pytest
+
+    from stillpoint.llm import _send_deepseek
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    with _pytest.raises(RuntimeError, match="DEEPSEEK_API_KEY"):
+        _send_deepseek("sys", [], {})
+
+
+def test_deepseek_peak_warning_shows_jst_windows(monkeypatch):
+    import stillpoint.llm as llm
+    monkeypatch.setattr(llm, "is_deepseek_peak_hours", lambda now=None: True)
+    warning = llm.deepseek_peak_warning({"provider": "deepseek"})
+    assert "10:00–13:00 and 15:00–19:00 JST" in warning

@@ -1,15 +1,86 @@
 """LLM backend abstraction for Stillpoint.
 
 Supports multiple LLM providers: Anthropic, OpenAI, OpenRouter, Google,
-MiniMax, Ollama. Reads provider configuration from config/therapist.yaml.
+MiniMax, DeepSeek, Ollama. Reads provider configuration from
+config/therapist.yaml.
 """
 
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 
 from stillpoint.config import load_config
 
 logger = logging.getLogger(__name__)
+
+# DeepSeek peak-hour pricing (announced 2026-06-30, effective with the
+# official V4 launch in mid-July 2026): API calls during 09:00–12:00
+# and 14:00–18:00 Beijing time (UTC+8), every day, are billed at DOUBLE
+# the off-peak rate (e.g. V4 Pro output: 6 → 12 yuan / US$1.77 per
+# million tokens). Applies to all V4 models.
+# Sources: DeepSeek subscriber email as reported by SCMP and TechNode,
+# 2026-06-30.
+_DEEPSEEK_PEAK_WINDOWS_BEIJING = ((9, 12), (14, 18))
+_BEIJING_TZ = timezone(timedelta(hours=8))
+
+
+def is_deepseek_peak_hours(now: datetime | None = None) -> bool:
+    """Return True if `now` falls in DeepSeek's peak-pricing windows.
+
+    Peak windows are 09:00–12:00 and 14:00–18:00 Beijing time (UTC+8),
+    daily. During these windows DeepSeek bills V4 API usage at twice
+    the off-peak rate.
+
+    Args:
+        now: Timezone-aware datetime to check. Defaults to the current
+            time.
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    beijing = now.astimezone(_BEIJING_TZ)
+    return any(
+        start <= beijing.hour < end
+        for start, end in _DEEPSEEK_PEAK_WINDOWS_BEIJING
+    )
+
+
+def deepseek_peak_warning(llm_config: dict | None = None) -> str:
+    """Return a cost warning when DeepSeek is in use during peak hours.
+
+    Returns an empty string when the configured provider is not
+    DeepSeek or the current time is off-peak.
+    """
+    if llm_config is None:
+        try:
+            llm_config = get_llm_config()
+        except Exception:
+            return ""
+    if llm_config.get("provider") != "deepseek":
+        return ""
+    if not is_deepseek_peak_hours():
+        return ""
+    return (
+        "⚠️ **DeepSeek peak-hour pricing is in effect** — API usage "
+        "is currently billed at **2× the off-peak rate**. Peak hours "
+        "are 09:00–12:00 and 14:00–18:00 Beijing time "
+        f"({_deepseek_peak_windows_jst()} JST), daily. Chatting "
+        "outside these windows costs half as much."
+    )
+
+
+def _deepseek_peak_windows_jst() -> str:
+    """Render the peak windows in Japan Standard Time (UTC+9).
+
+    The user is in Japan, so the banner shows the windows in JST
+    (Beijing time + 1 hour), e.g. "10:00–13:00 and 15:00–19:00".
+    """
+    jst = timezone(timedelta(hours=9))
+    parts = []
+    for start, end in _DEEPSEEK_PEAK_WINDOWS_BEIJING:
+        start_jst = datetime(2000, 1, 1, start, 0, tzinfo=_BEIJING_TZ).astimezone(jst)
+        end_jst = datetime(2000, 1, 1, end, 0, tzinfo=_BEIJING_TZ).astimezone(jst)
+        parts.append(f"{start_jst:%H:%M}–{end_jst:%H:%M}")
+    return " and ".join(parts)
 
 
 def get_llm_config() -> dict:
@@ -66,6 +137,8 @@ def send_message(
         return _send_openrouter(system_prompt, messages, llm_config)
     elif provider == "minimax":
         return _send_minimax(system_prompt, messages, llm_config)
+    elif provider == "deepseek":
+        return _send_deepseek(system_prompt, messages, llm_config)
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
 
@@ -218,6 +291,57 @@ def _send_openrouter(system_prompt: str, messages: list[dict], config: dict) -> 
     except Exception as e:
         logger.error("OpenRouter error: %s", e)
         raise RuntimeError(f"OpenRouter error: {e}") from e
+
+
+def _send_deepseek(system_prompt: str, messages: list[dict], config: dict) -> str:
+    """Send a message via the DeepSeek API (OpenAI-compatible).
+
+    DeepSeek serves an OpenAI-format Chat Completions API on
+    https://api.deepseek.com. ``base_url`` and ``model`` are
+    overridable in ``therapist.yaml``.
+
+    Peak-hour note: DeepSeek bills 2× during 09:00–12:00 and
+    14:00–18:00 Beijing time. The chat UI shows a banner (see
+    ``deepseek_peak_warning``); this function also logs a warning so
+    non-UI callers are informed.
+    """
+    try:
+        from openai import OpenAI
+    except ImportError:
+        raise ImportError(
+            "openai package not installed. Install with: pip install openai"
+        )
+
+    api_key_env = config.get("api_key_env", "DEEPSEEK_API_KEY")
+    api_key = os.environ.get(api_key_env)
+    if not api_key:
+        raise RuntimeError(
+            f"API key not found. Set the {api_key_env} environment variable."
+        )
+
+    model = config.get("model", "deepseek-chat")
+    base_url = config.get("base_url", "https://api.deepseek.com")
+
+    if is_deepseek_peak_hours():
+        logger.warning(
+            "DeepSeek peak-hour pricing in effect (09:00–12:00 / "
+            "14:00–18:00 Beijing time): this request is billed at 2x "
+            "the off-peak rate."
+        )
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=full_messages,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.error("DeepSeek error: %s", e)
+        raise RuntimeError(f"DeepSeek error: {e}") from e
 
 
 def _send_minimax(system_prompt: str, messages: list[dict], config: dict) -> str:

@@ -204,6 +204,9 @@ def get_phase_questions(phase: str) -> list[dict]:
                     "- **Google** (Gemini) — Good alternative\n"
                     "- **OpenRouter** — Access many models via one key\n"
                     "- **MiniMax** (M3) — Frontier model via the MiniMax Token Plan\n"
+                    "- **DeepSeek** (V4) — Inexpensive, pay-as-you-go. Note: usage "
+                    "during peak hours (09:00–12:00 and 14:00–18:00 Beijing time) "
+                    "is billed at 2× the off-peak rate\n"
                     "- **Ollama** — Run locally, no API costs, but requires a powerful machine"
                 ),
                 "choices": [
@@ -212,6 +215,7 @@ def get_phase_questions(phase: str) -> list[dict]:
                     "Google (Gemini)",
                     "OpenRouter",
                     "MiniMax (M3)",
+                    "DeepSeek (V4)",
                     "Ollama (local)",
                 ],
                 "required": True,
@@ -226,6 +230,7 @@ def get_phase_questions(phase: str) -> list[dict]:
                     "For Google: `export GOOGLE_API_KEY=your-key`\n"
                     "For OpenRouter: `export OPENROUTER_API_KEY=your-key`\n"
                     "For MiniMax: `export MINIMAX_API_KEY=your-key`\n"
+                    "For DeepSeek: `export DEEPSEEK_API_KEY=your-key`\n"
                     "For Ollama: No key needed, just make sure Ollama is running.\n\n"
                     "Have you set your API key?"
                 ),
@@ -471,6 +476,13 @@ def build_llm_config(state: dict) -> dict:
             # so the chat surface stays clean.
             "show_thinking": False,
         }
+    elif "DeepSeek" in provider_answer:
+        return {
+            "provider": "deepseek",
+            "model": "deepseek-chat",
+            "api_key_env": "DEEPSEEK_API_KEY",
+            "base_url": "https://api.deepseek.com",
+        }
 
     # Default
     return {
@@ -651,6 +663,7 @@ _QUICK_START_PROVIDER_CHOICES = [
     "Google (Gemini)",
     "OpenRouter",
     "MiniMax (M3)",
+    "DeepSeek (V4)",
     "Ollama (local)",
 ]
 
@@ -660,6 +673,7 @@ _QUICK_START_PROVIDER_ENV_VARS: dict[str, str] = {
     "Google (Gemini)": "GOOGLE_API_KEY",
     "OpenRouter": "OPENROUTER_API_KEY",
     "MiniMax (M3)": "MINIMAX_API_KEY",
+    "DeepSeek (V4)": "DEEPSEEK_API_KEY",
     "Ollama (local)": "",
 }
 
