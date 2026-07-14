@@ -123,3 +123,77 @@ def test_usage_signals_round_trip_through_treatment_plan(project_root, monkeypat
     assert "trigger_time_contacts" in plan["usage_signals"]
     # A due meta-question is marked addressed for this session.
     assert "session 5" in plan["usage_signals"]["meta_question_status"]
+
+
+# ---------------------------------------------------------------------------
+# process_message — clinical grounding injection (incl. no-NotebookLM paths)
+# ---------------------------------------------------------------------------
+
+def _start_engine(project_root, monkeypatch):
+    # _mock_session_deps is autouse; only the session count needs stubbing
+    monkeypatch.setattr(session, "get_session_count", lambda: 1)
+    engine = SessionEngine()
+    engine.start_session()
+    return engine
+
+
+def test_process_message_injects_grounding_when_available(project_root, monkeypatch):
+    """Grounded knowledge is injected as hidden context for the LLM."""
+    engine = _start_engine(project_root, monkeypatch)
+    monkeypatch.setattr(session, "query_knowledge", lambda q: "ACT says feelings pass.")
+    monkeypatch.setattr(session, "send_message", lambda *a, **kw: "Therapist reply.")
+
+    reply = engine.process_message("I feel anxious")
+
+    assert reply == "Therapist reply."
+    user_turn = engine.conversation[-2]["content"]
+    assert "[CLINICAL GROUNDING: ACT says feelings pass.]" in user_turn
+    assert "I feel anxious" in user_turn
+
+
+def test_process_message_skips_grounding_when_ungrounded(project_root, monkeypatch):
+    """With no notebooklm binary / no notebooks, the chat still works and
+    the user message is passed through unmodified."""
+    engine = _start_engine(project_root, monkeypatch)
+    monkeypatch.setattr(session, "query_knowledge", lambda q: "[UNGROUNDED]")
+    monkeypatch.setattr(session, "send_message", lambda *a, **kw: "Therapist reply.")
+
+    reply = engine.process_message("I feel anxious")
+
+    assert reply == "Therapist reply."
+    assert engine.conversation[-2]["content"] == "I feel anxious"
+
+
+def test_process_message_skips_grounding_no_notebooks_variant(project_root, monkeypatch):
+    """The '[UNGROUNDED — no notebooks configured]' variant is also treated
+    as ungrounded (startswith check, not equality)."""
+    engine = _start_engine(project_root, monkeypatch)
+    monkeypatch.setattr(
+        session, "query_knowledge",
+        lambda q: "[UNGROUNDED — no notebooks configured]",
+    )
+    monkeypatch.setattr(session, "send_message", lambda *a, **kw: "Reply.")
+
+    engine.process_message("hello")
+    assert engine.conversation[-2]["content"] == "hello"
+
+
+def test_process_message_llm_error_restores_original_message(project_root, monkeypatch):
+    """On LLM failure the augmented message is rolled back so retries
+    don't stack grounding prefixes."""
+    engine = _start_engine(project_root, monkeypatch)
+    monkeypatch.setattr(session, "query_knowledge", lambda q: "Some grounding.")
+
+    def boom(*a, **kw):
+        raise RuntimeError("api down")
+    monkeypatch.setattr(session, "send_message", boom)
+
+    reply = engine.process_message("I feel anxious")
+
+    assert "technical issue" in reply
+    assert engine.conversation[-1]["content"] == "I feel anxious"
+
+
+def test_process_message_requires_active_session(project_root, monkeypatch):
+    engine = SessionEngine()
+    assert "No active session" in engine.process_message("hi")
